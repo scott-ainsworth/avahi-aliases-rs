@@ -2,11 +2,11 @@
 
 //use std::io;
 
-mod options;
-//use avahi_aliases::aliases::AliasesFile;
+use avahi_aliases as lib;
+use lib::CommonOpts;
 
 #[paw::main]
-fn main(args: options::Args) {
+fn main(opts: CommonOpts) {
     println!("Hello, World!");
-    println!("{:?}", args);
+    println!("{:?}", opts);
 }

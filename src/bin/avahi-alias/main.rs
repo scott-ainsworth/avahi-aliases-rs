@@ -3,26 +3,26 @@
 use std::collections::HashSet;
 use std::io;
 
+use avahi_aliases as lib;
+use lib::{AliasesFile, CommandOpts, Command};
+
 mod messaging;
 use messaging::msg;
-mod options;
-use options::{Args, Command};
-use avahi_aliases::AliasesFile;
 
 #[paw::main]
-fn main(args: Args) {
-    match args.cmd {
-        Command::Add { common_opts, aliases } => {
-            messaging::init(common_opts.verbose, common_opts.debug);
-            add(common_opts.file, &aliases)
+fn main(opts: CommandOpts) {
+    match opts.cmd {
+        Command::Add { common, aliases } => {
+            messaging::init(common.verbose, common.debug);
+            add(common.file, &aliases)
         },
-        Command::List { common_opts } => {
-            messaging::init(common_opts.verbose, common_opts.debug);
-            list(common_opts.file)
+        Command::List { common } => {
+            messaging::init(common.verbose, common.debug);
+            list(common.file)
         },
-        Command::Remove { common_opts, aliases } => {
-            messaging::init(common_opts.verbose, common_opts.debug);
-            remove(common_opts.file, &aliases)
+        Command::Remove { common, aliases } => {
+            messaging::init(common.verbose, common.debug);
+            remove(common.file, &aliases)
         },
     }
     .err()

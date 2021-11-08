@@ -4,5 +4,7 @@
 
 mod aliases;
 pub use aliases::AliasesFile;
+mod options;
+pub use options::{CommonOpts, CommandOpts, Command};
 
 // end
