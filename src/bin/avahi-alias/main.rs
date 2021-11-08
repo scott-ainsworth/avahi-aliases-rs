@@ -7,7 +7,7 @@ mod messaging;
 use messaging::msg;
 mod options;
 use options::{Args, Command};
-use avahi_aliases::aliases::AliasesFile;
+use avahi_aliases::AliasesFile;
 
 #[paw::main]
 fn main(args: Args) {
