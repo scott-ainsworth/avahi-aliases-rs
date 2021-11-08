@@ -3,7 +3,7 @@
 //use std::io;
 
 mod options;
-//use avahi_aliases::cnames::CNamesFile;
+//use avahi_aliases::aliases::AliasesFile;
 
 #[paw::main]
 fn main(args: options::Args) {

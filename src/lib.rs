@@ -1,7 +1,7 @@
-//! This crate implements avahi-cnames
+//! This crate implements avahi-aliases
 
 #![warn(clippy::all, rust_2018_idioms)]
 
-pub mod cnames;
+pub mod aliases;
 
 // end

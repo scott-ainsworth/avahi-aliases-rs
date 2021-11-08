@@ -7,18 +7,18 @@ pub struct Line {
 
 impl Line {
     pub fn new(line: String) -> Self { Self { line } }
-    pub fn cname(&self) -> Option<&str> { clean_cname(&self.line) }
+    pub fn alias(&self) -> Option<&str> { clean_alias(&self.line) }
     pub fn text(&self) -> &str { &self.line }
 }
 
-fn clean_cname(raw_cname: &str) -> Option<&str> {
-    let line_without_comment = match raw_cname.find('#') {
-        Some(i) => &raw_cname[0..i],
-        None => raw_cname,
+fn clean_alias(raw_alias: &str) -> Option<&str> {
+    let line_without_comment = match raw_alias.find('#') {
+        Some(i) => &raw_alias[0..i],
+        None => raw_alias,
     };
     match line_without_comment.trim() {
         empty if empty.is_empty() => None,
-        cname => Some(cname),
+        alias => Some(alias),
     }
 }
 
@@ -29,23 +29,23 @@ fn clean_cname(raw_cname: &str) -> Option<&str> {
 #[allow(unused_macros)] // work around compiler bug
 macro_rules! option_from_text {
     ( $text:ident ) => {
-        Line::new(String::from($text)).cname()
+        Line::new(String::from($text)).alias()
     };
 }
 
 #[allow(unused_macros)] // work around compiler bug
-macro_rules! cname_from_text {
+macro_rules! alias_from_text {
     ( $text:ident ) => {
-        // Line::new(String::from($text)).cname().unwrap()
+        // Line::new(String::from($text)).alias().unwrap()
         option_from_text!($text).unwrap()
     };
 }
 
 #[test]
-fn cname_only_yields_cname() {
+fn alias_only_yields_alias() {
     let data = ["a.local", "xyzzy.local"];
     for text in data {
-        assert_eq!(cname_from_text!(text), text);
+        assert_eq!(alias_from_text!(text), text);
     }
 }
 
@@ -63,7 +63,7 @@ fn whitespace_is_ignored() {
         " \t a.local \t ",
     ];
     for text in data {
-        assert_eq!(cname_from_text!(text), "a.local");
+        assert_eq!(alias_from_text!(text), "a.local");
     }
 }
 
@@ -77,7 +77,7 @@ fn trailing_comments_are_ignored() {
         "a.local # A Long, Long Comment",
     ];
     for text in data {
-        assert_eq!(cname_from_text!(text), "a.local");
+        assert_eq!(alias_from_text!(text), "a.local");
     }
 }
 
@@ -98,7 +98,7 @@ fn comments_and_whitespace_are_ignored() {
         " \t a.local # \t Comment \t ",
     ];
     for text in data {
-        assert_eq!(cname_from_text!(text), "a.local");
+        assert_eq!(alias_from_text!(text), "a.local");
     }
 }
 

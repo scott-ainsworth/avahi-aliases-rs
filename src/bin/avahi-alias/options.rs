@@ -3,7 +3,7 @@
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "avahi-cname", about = "Maintain /etc/avahi/avahi-aliases")]
+#[structopt(name = "avahi-alias", about = "Maintain /etc/avahi/avahi-aliases")]
 pub struct Args {
     /// The subcommand to execute
     #[structopt(subcommand)]
@@ -30,27 +30,27 @@ pub struct CommonOpts {
 
 #[derive(Debug, StructOpt)]
 pub enum Command {
-    #[structopt(about = "Add CNAMEs")]
+    #[structopt(about = "Add Aliases")]
     Add {
         #[structopt(flatten)]
         common_opts: CommonOpts,
 
-        /// CNAMEs to add
+        /// Aliases to add
         #[structopt(required = true)]
-        cnames: Vec<String>,
+        aliases: Vec<String>,
     },
 
-    #[structopt(about = "Remove CNAMEs from Avahi")]
+    #[structopt(about = "Remove Aliases from Avahi")]
     Remove {
         #[structopt(flatten)]
         common_opts: CommonOpts,
 
-        /// CNAMEs to remove
+        /// Aliases to remove
         #[structopt(required = true)]
-        cnames: Vec<String>,
+        aliases: Vec<String>,
     },
 
-    #[structopt(about = "List existing CNAMEs")]
+    #[structopt(about = "List existing Aliases")]
     List {
         #[structopt(flatten)]
         common_opts: CommonOpts,

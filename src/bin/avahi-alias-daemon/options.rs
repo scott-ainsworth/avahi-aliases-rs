@@ -4,7 +4,7 @@ use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
-    name = "avahi-cname-daemon",
+    name = "avahi-alias-daemon",
     about = "Publish /etc/avahi/avahi-aliases")]
 pub struct Args {
     /// Print detailed progress messages
