@@ -2,8 +2,10 @@
 
 #![warn(clippy::all, rust_2018_idioms)]
 
-mod aliases;
-pub use aliases::AliasesFile;
+mod aliases_file;
+pub use aliases_file::AliasesFile;
+mod line;
+pub use line::Line;
 mod options;
 pub use options::{CommonOpts, CommandOpts, Command};
 
