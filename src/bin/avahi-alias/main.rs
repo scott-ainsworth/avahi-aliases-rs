@@ -12,26 +12,33 @@ use messaging::msg;
 #[paw::main]
 fn main(opts: CommandOpts) {
     match opts.cmd {
-        Command::Add { common, aliases } => {
-            messaging::init(common.verbose, common.debug);
-            add(common.file, &aliases)
+        Command::Add { aliases } => {
+            messaging::init(opts.common.verbose, opts.common.debug);
+            add(&opts.common.file, &aliases)
         },
-        Command::List { common } => {
-            messaging::init(common.verbose, common.debug);
-            list(common.file)
+        Command::List { } => {
+            messaging::init(opts.common.verbose, opts.common.debug);
+            list(&opts.common.file)
         },
-        Command::Remove { common, aliases } => {
-            messaging::init(common.verbose, common.debug);
-            remove(common.file, &aliases)
+        Command::Remove { aliases } => {
+            messaging::init(opts.common.verbose, opts.common.debug);
+            remove(&opts.common.file, &aliases)
         },
     }
     .err()
     .iter()
-    .for_each(|error| eprintln!("{:?}", error));
+    .for_each(|error| {
+        match error.kind() {
+            io::ErrorKind::NotFound => eprintln!(
+                "AVAHI-ALIASES file ({}) not found", &opts.common.file),
+            _ => eprintln!("{:?}", error)
+        };
+        std::process::exit(1);
+    });
 }
 
-fn add(filename: String, arg_aliases: &[String]) -> Result<(), io::Error> {
-    let file = AliasesFile::from_file(&filename)?;
+fn add(filename: &str, arg_aliases: &[String]) -> Result<(), io::Error> {
+    let file = AliasesFile::from_file(filename)?;
     modify(
         &file,
         arg_aliases,
@@ -41,16 +48,16 @@ fn add(filename: String, arg_aliases: &[String]) -> Result<(), io::Error> {
     )
 }
 
-fn list(filename: String) -> Result<(), io::Error> {
-    let file = AliasesFile::from_file(&filename)?;
+fn list(filename: &str) -> Result<(), io::Error> {
+    let file = AliasesFile::from_file(filename)?;
     for alias in file.aliases() {
         println!("{}", alias);
     }
     Ok(())
 }
 
-fn remove(filename: String, arg_aliases: &[String]) -> Result<(), io::Error> {
-    let file = AliasesFile::from_file(&filename)?;
+fn remove(filename: &str, arg_aliases: &[String]) -> Result<(), io::Error> {
+    let file = AliasesFile::from_file(filename)?;
     modify(
         &file,
         arg_aliases,

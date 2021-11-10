@@ -1,12 +1,12 @@
 #![warn(clippy::all)]
 
-//use std::io;
-
 use avahi_aliases as lib;
-use lib::CommonOpts;
+use lib::DaemonOpts;
 
 #[paw::main]
-fn main(opts: CommonOpts) {
+fn main(opts: DaemonOpts) {
     println!("Hello, World!");
     println!("{:?}", opts);
 }
+
+// end

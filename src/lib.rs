@@ -7,6 +7,6 @@ pub use aliases_file::AliasesFile;
 mod line;
 pub use line::Line;
 mod options;
-pub use options::{CommonOpts, CommandOpts, Command};
+pub use options::{CommonOpts, CommandOpts, Command, DaemonOpts};
 
 // end
