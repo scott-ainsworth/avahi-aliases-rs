@@ -68,139 +68,157 @@ pub enum Command {
 //**********************************************************************************************
 
 #[cfg(test)]
+mod test {
+    use structopt::{self, StructOpt};
 
-//**********************************************************************************************
-// Flags
+    use super::{Command, CommandOpts, CommonOpts};
 
-#[test]
-fn debug_flag_works() {
-    assert_eq!(CommonOpts::from_iter([""]).debug, false);
-    assert_eq!(CommonOpts::from_iter(["", "-d"]).debug, true);
-    assert_eq!(CommonOpts::from_iter(["", "--debug"]).debug, true);
-}
+    //******************************************************************************************
+    // Flags
 
-#[test]
-fn file_option_works() {
-    assert_eq!(CommonOpts::from_iter([""]).file, "/etc/avahi/avahi-aliases");
-    assert_eq!(CommonOpts::from_iter(["", "-f", "avahi-aliases"]).file, "avahi-aliases");
-    assert_eq!(CommonOpts::from_iter(["", "--file", "avahi-aliases"]).file, "avahi-aliases");
-}
-
-#[test]
-fn verbose_flag_works() {
-    assert_eq!(CommonOpts::from_iter([""]).verbose, false);
-    assert_eq!(CommonOpts::from_iter(["", "-v"]).verbose, true);
-    assert_eq!(CommonOpts::from_iter(["", "--verbose"]).verbose, true);
-}
-
-//**********************************************************************************************
-// Add Command
-
-#[test]
-fn add_command_works() {
-    assert!(matches!(CommandOpts::from_iter(["", "add", "a1.local"]).cmd, Command::Add { .. }));
-}
-
-#[test]
-fn add_flags_work() {
-    let opts =
-        CommandOpts::from_iter(["", "add", "-v", "-d", "-f", "avahi-aliases", "a1.local"]);
-    assert!(opts.common.debug);
-    assert_eq!(opts.common.file, "avahi-aliases");
-    assert!(opts.common.verbose);
-}
-
-#[test]
-fn add_command_aliases_work() {
-    match CommandOpts::from_iter(["", "add", "a1.local"]).cmd {
-        Command::Add { aliases, .. } => {
-            assert_eq!(aliases.len(), 1);
-            assert_eq!(aliases[0], "a1.local")
-        },
-        _ => (),
-    };
-    match CommandOpts::from_iter(["", "add", "a1.local", "a2.local"]).cmd {
-        Command::Add { aliases, .. } => {
-            assert_eq!(aliases.len(), 2);
-            assert_eq!(aliases[0], "a1.local");
-            assert_eq!(aliases[1], "a2.local")
-        },
-        _ => (),
+    #[test]
+    fn debug_flag_works() {
+        assert_eq!(CommonOpts::from_iter([""]).debug, false);
+        assert_eq!(CommonOpts::from_iter(["", "-d"]).debug, true);
+        assert_eq!(CommonOpts::from_iter(["", "--debug"]).debug, true);
     }
-}
 
-#[test]
-fn add_command_requires_at_least_one_alias() {
-    let opts = CommandOpts::from_iter_safe(["", "add"]);
-    assert!(matches!(&opts.as_ref().unwrap_err(), clap::Error {
-        kind: clap::ErrorKind::MissingRequiredArgument,
-        ..
-    }));
-    assert!(opts.unwrap_err().message.contains("<ALIAS>"));
-}
+    #[test]
+    fn file_option_works() {
+        assert_eq!(CommonOpts::from_iter([""]).file, "/etc/avahi/avahi-aliases");
+        assert_eq!(CommonOpts::from_iter(["", "-f", "avahi-aliases"]).file, "avahi-aliases");
+        assert_eq!(
+            CommonOpts::from_iter(["", "--file", "avahi-aliases"]).file,
+            "avahi-aliases"
+        );
+    }
 
-//**********************************************************************************************
-// List Command
+    #[test]
+    fn verbose_flag_works() {
+        assert_eq!(CommonOpts::from_iter([""]).verbose, false);
+        assert_eq!(CommonOpts::from_iter(["", "-v"]).verbose, true);
+        assert_eq!(CommonOpts::from_iter(["", "--verbose"]).verbose, true);
+    }
 
-#[test]
-fn list_command_works() {
-    assert!(matches!(CommandOpts::from_iter(["", "list"]).cmd, Command::List { .. }));
-}
+    //******************************************************************************************
+    // Add Command
 
-#[test]
-fn list_flags_work() {
-    let opts = CommandOpts::from_iter(["", "list", "-v", "-d", "-f", "avahi-aliases"]);
-    assert!(opts.common.debug);
-    assert_eq!(opts.common.file, "avahi-aliases");
-    assert!(opts.common.verbose);
-}
+    #[test]
+    fn add_command_works() {
+        assert!(matches!(
+            CommandOpts::from_iter(["", "add", "a1.local"]).cmd,
+            Command::Add { .. }
+        ));
+    }
 
-//**********************************************************************************************
-// Remove Command
+    #[test]
+    fn add_flags_work() {
+        let opts =
+            CommandOpts::from_iter(["", "add", "-v", "-d", "-f", "avahi-aliases", "a1.local"]);
+        assert!(opts.common.debug);
+        assert_eq!(opts.common.file, "avahi-aliases");
+        assert!(opts.common.verbose);
+    }
 
-#[test]
-fn remove_command_works() {
-    assert!(matches!(
-        CommandOpts::from_iter(["", "remove", "a1.local"]).cmd,
-        Command::Remove { .. }
-    ));
-}
+    #[test]
+    fn add_command_aliases_work() {
+        match CommandOpts::from_iter(["", "add", "a1.local"]).cmd {
+            Command::Add { aliases, .. } => {
+                assert_eq!(aliases.len(), 1);
+                assert_eq!(aliases[0], "a1.local")
+            },
+            _ => (),
+        };
+        match CommandOpts::from_iter(["", "add", "a1.local", "a2.local"]).cmd {
+            Command::Add { aliases, .. } => {
+                assert_eq!(aliases.len(), 2);
+                assert_eq!(aliases[0], "a1.local");
+                assert_eq!(aliases[1], "a2.local")
+            },
+            _ => (),
+        }
+    }
 
-#[test]
-fn remove_flags_work() {
-    let opts =
-        CommandOpts::from_iter(["", "remove", "-v", "-d", "-f", "avahi-aliases", "a1.local"]);
-    assert!(opts.common.debug);
-    assert_eq!(opts.common.file, "avahi-aliases");
-    assert!(opts.common.verbose);
-}
+    #[test]
+    fn add_command_requires_at_least_one_alias() {
+        let opts = CommandOpts::from_iter_safe(["", "add"]);
+        assert!(matches!(&opts.as_ref().unwrap_err(), clap::Error {
+            kind: clap::ErrorKind::MissingRequiredArgument,
+            ..
+        }));
+        assert!(opts.unwrap_err().message.contains("<ALIAS>"));
+    }
 
-#[test]
-fn remove_command_requires_at_least_one_alias() {
-    let opts = CommandOpts::from_iter_safe(["", "remove"]);
-    assert!(matches!(&opts.as_ref().unwrap_err(), clap::Error {
-        kind: clap::ErrorKind::MissingRequiredArgument,
-        ..
-    }));
-    assert!(opts.unwrap_err().message.contains("<ALIAS>"));
-}
+    //******************************************************************************************
+    // List Command
 
-#[test]
-fn remove_command_aliases_work() {
-    match CommandOpts::from_iter(["", "remove", "a1.local"]).cmd {
-        Command::Remove { aliases, .. } => {
-            assert_eq!(aliases.len(), 1);
-            assert_eq!(aliases[0], "a1.local")
-        },
-        _ => (),
-    };
-    match CommandOpts::from_iter(["", "remove", "a1.local", "a2.local"]).cmd {
-        Command::Add { aliases, .. } => {
-            assert_eq!(aliases.len(), 2);
-            assert_eq!(aliases[0], "a1.local");
-            assert_eq!(aliases[1], "a2.local")
-        },
-        _ => (),
+    #[test]
+    fn list_command_works() {
+        assert!(matches!(CommandOpts::from_iter(["", "list"]).cmd, Command::List { .. }));
+    }
+
+    #[test]
+    fn list_flags_work() {
+        let opts = CommandOpts::from_iter(["", "list", "-v", "-d", "-f", "avahi-aliases"]);
+        assert!(opts.common.debug);
+        assert_eq!(opts.common.file, "avahi-aliases");
+        assert!(opts.common.verbose);
+    }
+
+    //******************************************************************************************
+    // Remove Command
+
+    #[test]
+    fn remove_command_works() {
+        assert!(matches!(
+            CommandOpts::from_iter(["", "remove", "a1.local"]).cmd,
+            Command::Remove { .. }
+        ));
+    }
+
+    #[test]
+    fn remove_flags_work() {
+        let opts = CommandOpts::from_iter([
+            "",
+            "remove",
+            "-v",
+            "-d",
+            "-f",
+            "avahi-aliases",
+            "a1.local",
+        ]);
+        assert!(opts.common.debug);
+        assert_eq!(opts.common.file, "avahi-aliases");
+        assert!(opts.common.verbose);
+    }
+
+    #[test]
+    fn remove_command_requires_at_least_one_alias() {
+        let opts = CommandOpts::from_iter_safe(["", "remove"]);
+        assert!(matches!(&opts.as_ref().unwrap_err(), clap::Error {
+            kind: clap::ErrorKind::MissingRequiredArgument,
+            ..
+        }));
+        assert!(opts.unwrap_err().message.contains("<ALIAS>"));
+    }
+
+    #[test]
+    fn remove_command_aliases_work() {
+        match CommandOpts::from_iter(["", "remove", "a1.local"]).cmd {
+            Command::Remove { aliases, .. } => {
+                assert_eq!(aliases.len(), 1);
+                assert_eq!(aliases[0], "a1.local")
+            },
+            _ => (),
+        };
+        match CommandOpts::from_iter(["", "remove", "a1.local", "a2.local"]).cmd {
+            Command::Add { aliases, .. } => {
+                assert_eq!(aliases.len(), 2);
+                assert_eq!(aliases[0], "a1.local");
+                assert_eq!(aliases[1], "a2.local")
+            },
+            _ => (),
+        }
     }
 }
 

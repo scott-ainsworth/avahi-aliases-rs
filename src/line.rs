@@ -22,97 +22,100 @@ fn clean_alias(raw_alias: &str) -> Option<&str> {
     }
 }
 
+//**********************************************************************************************
+// Unit tests
+//**********************************************************************************************
+
 #[cfg(test)]
-// Utility macros to simplify tests
-#[allow(unused_macros)] // work around compiler bug
-macro_rules! option_from_text {
-    ( $text:ident ) => {
-        Line::new(String::from($text)).alias()
-    };
-}
+mod tests {
+    use super::Line;
 
-#[allow(unused_macros)] // work around compiler bug
-macro_rules! alias_from_text {
-    ( $text:ident ) => {
-        // Line::new(String::from($text)).alias().unwrap()
-        option_from_text!($text).unwrap()
-    };
-}
-
-#[test]
-fn alias_only_yields_alias() {
-    let data = ["a.local", "xyzzy.local"];
-    for text in data {
-        assert_eq!(alias_from_text!(text), text);
+    // Utility macros to simplify tests
+    #[allow(unused_macros)] // work around compiler bug
+    macro_rules! option_from_text {
+        ( $text:ident ) => { Line::new(String::from($text)).alias() };
     }
-}
 
-#[test]
-fn whitespace_is_ignored() {
-    let data = [
-        "a.local  ",
-        "  a.local",
-        "  a.local   ",
-        "a.local\t",
-        "\ta.local",
-        "\ta.local\t",
-        "a.local \t ",
-        " \t a.local",
-        " \t a.local \t ",
-    ];
-    for text in data {
-        assert_eq!(alias_from_text!(text), "a.local");
+    #[allow(unused_macros)] // work around compiler bug
+    macro_rules! alias_from_text {
+        ( $text:ident ) => { option_from_text!($text).unwrap() };
     }
-}
 
-#[test]
-fn trailing_comments_are_ignored() {
-    let data = [
-        "a.local# Comment",
-        "a.local # Comment",
-        "a.local  # Comment",
-        "a.local \t # Comment",
-        "a.local # A Long, Long Comment",
-    ];
-    for text in data {
-        assert_eq!(alias_from_text!(text), "a.local");
+    #[test]
+    fn alias_only_yields_alias() {
+        let data = ["a.local", "xyzzy.local"];
+        for text in data {
+            assert_eq!(alias_from_text!(text), text);
+        }
     }
-}
 
-#[test]
-fn comments_and_whitespace_are_ignored() {
-    let data = [
-        "a.local # Comment",
-        "a.local #  Comment",
-        "a.local # \t Comment",
-        "a.local # Comment ",
-        "a.local #  Comment\t",
-        "a.local # \t Comment \t ",
-        " a.local # Comment",
-        "\ta.local #  Comment",
-        " \t a.local # \t Comment",
-        " a.local # Comment ",
-        "\ta.local #  Comment\t",
-        " \t a.local # \t Comment \t ",
-    ];
-    for text in data {
-        assert_eq!(alias_from_text!(text), "a.local");
+    #[test]
+    fn whitespace_is_ignored() {
+        let data = [
+            "a.local  ",
+            "  a.local",
+            "  a.local   ",
+            "a.local\t",
+            "\ta.local",
+            "\ta.local\t",
+            "a.local \t ",
+            " \t a.local",
+            " \t a.local \t ",
+        ];
+        for text in data {
+            assert_eq!(alias_from_text!(text), "a.local");
+        }
     }
-}
 
-#[test]
-fn whitespace_lines_yield_none() {
-    let data = ["", " ", "  ", "\t", "\t", "\t\t", " \t ", " \t ", " \t \t "];
-    for text in data {
-        assert_eq!(option_from_text!(text), None)
+    #[test]
+    fn trailing_comments_are_ignored() {
+        let data = [
+            "a.local# Comment",
+            "a.local # Comment",
+            "a.local  # Comment",
+            "a.local \t # Comment",
+            "a.local # A Long, Long Comment",
+        ];
+        for text in data {
+            assert_eq!(alias_from_text!(text), "a.local");
+        }
     }
-}
 
-#[test]
-fn comment_only_lines_yield_none() {
-    let data = ["# Comment", " # Comment", " # Comment    "];
-    for text in data {
-        assert_eq!(option_from_text!(text), None)
+    #[test]
+    fn comments_and_whitespace_are_ignored() {
+        let data = [
+            "a.local # Comment",
+            "a.local #  Comment",
+            "a.local # \t Comment",
+            "a.local # Comment ",
+            "a.local #  Comment\t",
+            "a.local # \t Comment \t ",
+            " a.local # Comment",
+            "\ta.local #  Comment",
+            " \t a.local # \t Comment",
+            " a.local # Comment ",
+            "\ta.local #  Comment\t",
+            " \t a.local # \t Comment \t ",
+        ];
+        for text in data {
+            assert_eq!(alias_from_text!(text), "a.local");
+        }
+    }
+
+    #[test]
+    fn whitespace_lines_yield_none() {
+        let data = ["", " ", "  ", "\t", "\t", "\t\t", " \t ", " \t ", " \t \t "];
+        for text in data {
+            assert_eq!(option_from_text!(text), None)
+        }
+    }
+
+    #[test]
+    fn comment_only_lines_yield_none() {
+        let data = ["# Comment", " # Comment", " # Comment    "];
+        for text in data {
+            assert_eq!(option_from_text!(text), None)
+        }
     }
 }
 
