@@ -4,10 +4,30 @@
 
 		{
 			"type": "cargo",
-			"command": "build",
+			"command": "check",
 			"problemMatcher": [ "$rustc" ],
 			"group": "build",
+			"label": "rust: cargo check"
+		},
+
+		{
+			"type": "cargo",
+			"command": "build",
+			"problemMatcher": [ "$rustc" ],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"dependsOn": ["rust: cargo fmt"],
 			"label": "rust: cargo build"
+		},
+
+		{
+			"type": "shell",
+			"command": ["cargo", "+nightly", "fmt" ],
+			"problemMatcher": [ "$rustc" ],
+			"group": "build",
+			"label": "rust: cargo fmt"
 		},
 
 		{
@@ -15,18 +35,10 @@
 			"command": "test",
 			"problemMatcher": [ "$rustc" ],
 			"group": {
-				"kind": "build",
+				"kind": "test",
 				"isDefault": true
 			},
-			"label": "rust: cargo build"
-		},
-
-		{
-			"type": "cargo",
-			"command": "check",
-			"problemMatcher": [ "$rustc" ],
-			"group": "build",
-			"label": "rust: cargo check"
+			"label": "rust: cargo test"
 		}
 
 	]
