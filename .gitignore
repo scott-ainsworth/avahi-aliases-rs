@@ -11,3 +11,6 @@ Cargo.lock
 
 # working directories
 test-results
+
+# OS Junk
+.DS_Store
