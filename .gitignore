@@ -12,5 +12,8 @@ Cargo.lock
 # working directories
 test-results
 
+# Temporary files
+*.swp
+
 # OS Junk
 .DS_Store
