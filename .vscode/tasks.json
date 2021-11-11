@@ -4,7 +4,7 @@
 
 		{
 			"type": "cargo",
-			"subcommand": "build",
+			"command": "build",
 			"problemMatcher": [ "$rustc" ],
 			"group": "build",
 			"label": "rust: cargo build"
@@ -12,7 +12,7 @@
 
 		{
 			"type": "cargo",
-			"subcommand": "test",
+			"command": "test",
 			"problemMatcher": [ "$rustc" ],
 			"group": {
 				"kind": "build",
@@ -23,7 +23,7 @@
 
 		{
 			"type": "cargo",
-			"subcommand": "check",
+			"command": "check",
 			"problemMatcher": [ "$rustc" ],
 			"group": "build",
 			"label": "rust: cargo check"
