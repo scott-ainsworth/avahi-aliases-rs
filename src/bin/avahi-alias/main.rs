@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::io;
 
 use avahi_aliases as lib;
-use lib::{AliasesFile, CommandOpts, Command};
+use lib::{AliasesFile, Command, CommandOpts};
 
 mod messaging;
 use messaging::msg;
@@ -16,7 +16,7 @@ fn main(opts: CommandOpts) {
             messaging::init(opts.common.verbose, opts.common.debug);
             add(&opts.common.file, &aliases)
         },
-        Command::List { } => {
+        Command::List {} => {
             messaging::init(opts.common.verbose, opts.common.debug);
             list(&opts.common.file)
         },
@@ -29,9 +29,10 @@ fn main(opts: CommandOpts) {
     .iter()
     .for_each(|error| {
         match error.kind() {
-            io::ErrorKind::NotFound => eprintln!(
-                "AVAHI-ALIASES file ({}) not found", &opts.common.file),
-            _ => eprintln!("{:?}", error)
+            io::ErrorKind::NotFound => {
+                eprintln!("AVAHI-ALIASES file ({}) not found", &opts.common.file)
+            },
+            _ => eprintln!("{:?}", error),
         };
         std::process::exit(1);
     });

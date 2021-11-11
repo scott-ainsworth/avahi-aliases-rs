@@ -23,9 +23,7 @@ fn clean_alias(raw_alias: &str) -> Option<&str> {
 }
 
 #[cfg(test)]
-
-/// Utility macros to simplify tests
-
+// Utility macros to simplify tests
 #[allow(unused_macros)] // work around compiler bug
 macro_rules! option_from_text {
     ( $text:ident ) => {
