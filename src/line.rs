@@ -33,12 +33,16 @@ mod tests {
     // Utility macros to simplify tests
     #[allow(unused_macros)] // work around compiler bug
     macro_rules! option_from_text {
-        ( $text:ident ) => { Line::new(String::from($text)).alias() };
+        ( $text:ident ) => {
+            Line::new(String::from($text)).alias()
+        };
     }
 
     #[allow(unused_macros)] // work around compiler bug
     macro_rules! alias_from_text {
-        ( $text:ident ) => { option_from_text!($text).unwrap() };
+        ( $text:ident ) => {
+            option_from_text!($text).unwrap()
+        };
     }
 
     #[test]

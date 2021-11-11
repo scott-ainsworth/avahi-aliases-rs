@@ -78,6 +78,7 @@ mod tests {
 
     use std::{self, fs, str};
     use std::io::{BufWriter, Error, Write};
+
     use super::AliasesFile;
 
     const TEST_FILE: &str = "data/test-aliases";
@@ -165,7 +166,6 @@ mod tests {
             )
         });
     }
-
 }
 
 // end

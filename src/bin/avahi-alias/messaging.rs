@@ -48,5 +48,4 @@ mod tests {
         assert_eq!(super::compute_log_level(false, true), log::LevelFilter::Debug);
         assert_eq!(super::compute_log_level(true, true), log::LevelFilter::Debug);
     }
-
 }
