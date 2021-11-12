@@ -1,9 +1,7 @@
 #![warn(clippy::all)]
 
-pub use log as msg;
-
 /// Initialize logging
-pub fn init(verbose: bool, debug: bool) {
+pub fn init_console(verbose: bool, debug: bool) {
     env_logger::builder()
         .format_target(false)
         .format_level(false)

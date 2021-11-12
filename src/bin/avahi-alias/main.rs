@@ -4,26 +4,15 @@ use std::collections::HashSet;
 use std::io;
 
 use avahi_aliases as lib;
-use lib::{AliasesFile, Command, CommandOpts};
-
-mod messaging;
-use messaging::msg;
+use lib::{logging, AliasesFile, Command, CommandOpts};
 
 #[paw::main]
 fn main(opts: CommandOpts) {
+    logging::init_console(opts.common.verbose, opts.common.debug);
     match opts.cmd {
-        Command::Add { aliases } => {
-            messaging::init(opts.common.verbose, opts.common.debug);
-            add(&opts.common.file, &aliases)
-        },
-        Command::List {} => {
-            messaging::init(opts.common.verbose, opts.common.debug);
-            list(&opts.common.file)
-        },
-        Command::Remove { aliases } => {
-            messaging::init(opts.common.verbose, opts.common.debug);
-            remove(&opts.common.file, &aliases)
-        },
+        Command::Add { aliases } => add(&opts.common.file, &aliases),
+        Command::List {} => list(&opts.common.file),
+        Command::Remove { aliases } => remove(&opts.common.file, &aliases),
     }
     .err()
     .iter()
@@ -43,8 +32,8 @@ fn add(filename: &str, arg_aliases: &[String]) -> Result<(), io::Error> {
     modify(
         &file,
         arg_aliases,
-        &|alias| msg::info!("{:?} is already in {}", alias, filename),
-        &|alias| msg::info!("Adding {:?} to {}", alias, filename),
+        &|alias| log::info!("{:?} is already in {}", alias, filename),
+        &|alias| log::info!("Adding {:?} to {}", alias, filename),
         &|_, new_aliases| file.append(new_aliases),
     )
 }
@@ -62,8 +51,8 @@ fn remove(filename: &str, arg_aliases: &[String]) -> Result<(), io::Error> {
     modify(
         &file,
         arg_aliases,
-        &|alias| msg::info!("Removing alias {:?} from {}", alias, filename),
-        &|alias| msg::info!("{:?} is not in {}", alias, filename),
+        &|alias| log::info!("Removing alias {:?} from {}", alias, filename),
+        &|alias| log::info!("{:?} is not in {}", alias, filename),
         &|extant_aliases, _| file.remove(extant_aliases),
     )
 }
