@@ -28,5 +28,8 @@ log = "0.4.14"
 env_logger = "0.9.0"
 users = "0.11.0"
 clap = "2.33.3"
+time = { version = "0.3.5", features = [ "formatting" ] }
+syslog = "5.0.0"
+thiserror = "1.0.30"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
