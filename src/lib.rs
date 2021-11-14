@@ -11,5 +11,6 @@ pub use line::Line;
 pub mod logging;
 mod options;
 pub use options::{Command, CommandOpts, CommonOpts, DaemonOpts};
+mod validation;
 
 // end
