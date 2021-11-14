@@ -1,67 +1,72 @@
 #![warn(clippy::all)]
 
 use std::collections::HashSet;
-use std::io::{self, BufWriter, Read, Write};
+use std::io::{BufWriter, Read, Write};
 use std::{self, fs, str};
 
-use super::line::Line;
+use crate::{validation, ErrorWrapper, Line};
 
 #[derive(Debug)]
-pub struct AliasesFile<'a> {
-    file_name: &'a str,
+pub struct AliasesFile {
+    file_name: String,
     lines: Vec<Line>,
 }
 
-impl<'a> AliasesFile<'a> {
+impl AliasesFile {
+    /// Return a vector containing the aliases
     pub fn aliases(&self) -> Vec<&str> {
         self.lines.iter().filter_map(|line| line.alias()).collect()
     }
 
-    pub fn from_file(filename: &'a str) -> Result<Self, io::Error> {
-        fs::OpenOptions::new()
+    pub fn from_file(filename: &str) -> Result<Self, ErrorWrapper> {
+        let mut file = fs::OpenOptions::new()
             .read(true)
             .open(filename)
-            .and_then(|mut f| {
-                let mut buf = String::new();
-                match f.read_to_string(&mut buf) {
-                    Ok(_) => Ok(buf),
-                    Err(e) => Err(e),
-                }
-            })
-            .map(|buffer| {
-                let lines = buffer.lines().map(|text| Line::new(text.to_owned()));
-                AliasesFile { file_name: filename, lines: lines.collect() }
-            })
+            .map_err(|error| ErrorWrapper::open_error(filename, error))?;
+        let mut buf = String::new();
+        file.read_to_string(&mut buf)
+            .map_err(|error| ErrorWrapper::read_error(filename, error))?;
+        Ok(AliasesFile {
+            file_name: filename.to_owned(),
+            lines: buf.lines().map(|text| Line::new(text.to_owned())).collect(),
+        })
     }
 
-    pub fn append(&self, aliases: Vec<&str>) -> Result<(), io::Error> {
-        fs::OpenOptions::new().append(true).open(self.file_name).map(BufWriter::new).and_then(
-            |mut writer| {
-                for alias in aliases {
-                    writer.write_all(format!("{}\n", alias).as_bytes())?;
-                }
-                Ok(())
-            },
-        )
+    pub fn append(&self, aliases: &[&str]) -> Result<(), ErrorWrapper> {
+        for alias in aliases {
+            validation::validate_alias(alias)?;
+        }
+        let mut writer = fs::OpenOptions::new()
+            .append(true)
+            .open(&self.file_name)
+            .map(BufWriter::new)
+            .map_err(|error| ErrorWrapper::open_error(&self.file_name, error))?;
+        for alias in aliases {
+            writer
+                .write_all(format!("{}\n", alias).as_bytes())
+                .map_err(|error| ErrorWrapper::write_error(&self.file_name, error))?;
+        }
+        Ok(())
     }
 
-    pub fn remove(&self, aliases: Vec<&str>) -> Result<(), io::Error> {
+    pub fn remove(&self, aliases: Vec<&str>) -> Result<(), ErrorWrapper> {
         let aliases: HashSet<&str> = aliases.into_iter().collect();
-        fs::OpenOptions::new()
+        let mut writer = fs::OpenOptions::new()
             .truncate(true)
             .write(true)
-            .open(self.file_name)
+            .open(&self.file_name)
             .map(BufWriter::new)
-            .and_then(|mut writer| {
-                let retained_lines = (&self.lines).iter().filter(|l| match l.alias() {
-                    Some(alias) => !aliases.contains(alias),
-                    _ => true,
-                });
-                for line in retained_lines {
-                    writer.write_all(format!("{}\n", line.text()).as_bytes())?;
-                }
-                Ok(())
-            })
+            .map_err(|error| ErrorWrapper::open_error(&self.file_name, error))?;
+        let retained_lines = (&self.lines).iter().filter(|line| match line.alias() {
+            Some(alias) => !aliases.contains(alias),
+            _ => true,
+        });
+        for line in retained_lines {
+            writer
+                .write_all(format!("{}\n", line.text()).as_bytes())
+                .map_err(|error| ErrorWrapper::write_error(&self.file_name, error))?;
+        }
+        Ok(())
     }
 
     /// Used for testing.
@@ -99,17 +104,18 @@ mod tests {
     }
 
     #[test]
-    fn append_appends() -> Result<(), Error> {
+    fn append_appends() {
         for n in 0..5 {
             create_test_file(APPEND_TEST_FILE, n);
             let aliases_file = AliasesFile::from_file(APPEND_TEST_FILE).unwrap();
-            aliases_file.append(vec!["b0.local"])?;
+            aliases_file
+                .append(&vec!["b0.local"])
+                .unwrap_or_else(|error| panic!("Append failed: {}", error));
             let aliases_file = AliasesFile::from_file(APPEND_TEST_FILE).unwrap();
             let aliases = aliases_file.aliases();
             assert_eq!(aliases[n], "b0.local");
             delete_test_file(APPEND_TEST_FILE);
         }
-        Ok(())
     }
 
     #[test]
@@ -118,9 +124,13 @@ mod tests {
             create_test_file(REMOVE_TEST_FILE, n);
             let aliases_file = AliasesFile::from_file(REMOVE_TEST_FILE).unwrap();
             if n >= 2 {
-                aliases_file.remove(vec!["a0.local", "a2.local"])?;
+                aliases_file
+                    .remove(vec!["a0.local", "a2.local"])
+                    .unwrap_or_else(|error| panic!("Removed failed: {}", error));
             } else if n > 0 {
-                aliases_file.remove(vec!["a0.local"])?;
+                aliases_file
+                    .remove(vec!["a0.local"])
+                    .unwrap_or_else(|error| panic!("Removed failed: {}", error));
             }
             let aliases_file = AliasesFile::from_file(REMOVE_TEST_FILE).unwrap();
             let aliases = aliases_file.aliases();

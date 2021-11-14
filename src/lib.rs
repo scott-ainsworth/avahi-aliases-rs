@@ -4,6 +4,8 @@
 
 mod aliases_file;
 pub use aliases_file::AliasesFile;
+mod error;
+pub use error::ErrorWrapper;
 mod line;
 pub use line::Line;
 pub mod logging;
