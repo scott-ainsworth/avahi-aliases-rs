@@ -1,0 +1,64 @@
+# https://github.com/rust-lang/rustfmt/blob/master/Configurations.md
+
+version = "Two"
+tab_spaces = 4
+hard_tabs = false
+max_width = 96
+newline_style = "Unix"
+
+format_generated_files = false
+struct_variant_width = 96
+comment_width = 96
+
+use_small_heuristics = "Max"
+unstable_features = true
+
+binop_separator = "Front"
+blank_lines_lower_bound = 0
+blank_lines_upper_bound = 2
+#brace_style = "SameLineWhere"
+brace_style = "PreferSameLine"
+condense_wildcard_suffixes = true
+#control_brace_style = "ClosingNextLine"
+control_brace_style = "AlwaysSameLine"
+
+edition = "2021"
+
+empty_item_single_line = true
+enum_discrim_align_threshold = 20
+
+error_on_line_overflow = true
+error_on_unformatted = true
+
+fn_args_layout = "Compressed"
+fn_single_line = true
+force_explicit_abi = true
+force_multiline_blocks = false
+format_code_in_doc_comments = true
+format_macro_matchers = false
+format_macro_bodies = false
+format_strings = false
+hex_literal_case = "lower"
+imports_granularity = "Module"
+match_block_trailing_comma = true
+merge_derives = true
+normalize_comments = true
+normalize_doc_attributes = true
+overflow_delimited_expr = true
+remove_nested_parens = true
+#reorder_impl_items = true
+reorder_imports = false
+group_imports = "StdExternalCrate"
+reorder_modules = true
+report_fixme = "Unnumbered"
+report_todo = "Unnumbered"
+space_after_colon = true
+space_before_colon = false
+spaces_around_ranges = false
+struct_lit_single_line = true
+trailing_comma = "Vertical"
+trailing_semicolon = true
+type_punctuation_density = "Wide"
+use_try_shorthand = true
+where_single_line = false
+wrap_comments = true
