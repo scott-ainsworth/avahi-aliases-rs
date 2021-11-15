@@ -26,13 +26,6 @@ fn add(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
         log::info!("Adding {:?} to {}", alias, filename);
     }
     file.append(&new_aliases)
-    // modify(
-    //     &file,
-    //     arg_aliases,
-    //     &|alias| log::info!("{:?} is already in {}", alias, filename),
-    //     &|alias| log::info!("Adding {:?} to {}", alias, filename),
-    //     &|_, new_aliases| file.append(new_aliases),
-    // )
 }
 
 fn list(filename: &str) -> Result<(), ErrorWrapper> {
@@ -45,28 +38,12 @@ fn list(filename: &str) -> Result<(), ErrorWrapper> {
 
 fn remove(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
     let file = AliasesFile::from_file(filename)?;
-    modify(
-        &file,
-        arg_aliases,
-        &|alias| log::info!("Removing alias {:?} from {}", alias, filename),
-        &|alias| log::info!("{:?} is not in {}", alias, filename),
-        &|extant_aliases, _| file.remove(extant_aliases),
-    )
-}
-
-fn modify(
-    file: &AliasesFile, arg_aliases: &[String], extant_msg: &dyn Fn(&str),
-    new_msg: &dyn Fn(&str), action: &dyn Fn(Vec<&str>, Vec<&str>) -> Result<(), ErrorWrapper>,
-) -> Result<(), ErrorWrapper> {
     let file_aliases: HashSet<&str> = file.aliases().into_iter().collect();
-    let (extant_aliases, new_aliases) = split_aliases(&file_aliases, arg_aliases);
+    let (extant_aliases, _) = split_aliases(&file_aliases, arg_aliases);
     for alias in extant_aliases.iter() {
-        extant_msg(alias);
+        log::info!("Removing alias {:?} from {}", alias, filename);
     }
-    for alias in new_aliases.iter() {
-        new_msg(alias);
-    }
-    action(extant_aliases, new_aliases)
+    file.remove(extant_aliases)
 }
 
 fn split_aliases<'a>(
