@@ -28,10 +28,10 @@ impl<'a> AliasesFile {
         let mut file = fs::OpenOptions::new()
             .read(true)
             .open(filename)
-            .map_err(|error| ErrorWrapper::open_error(filename, error))?;
+            .map_err(|error| ErrorWrapper::new_open_error(filename, error))?;
         let mut buf = String::new();
         file.read_to_string(&mut buf)
-            .map_err(|error| ErrorWrapper::read_error(filename, error))?;
+            .map_err(|error| ErrorWrapper::new_read_error(filename, error))?;
         Ok(AliasesFile {
             file_name: filename.to_owned(),
             lines: buf.lines().map(|text| Line::new(text.to_owned())).collect(),
@@ -44,11 +44,11 @@ impl<'a> AliasesFile {
             .append(true)
             .open(&self.file_name)
             .map(BufWriter::new)
-            .map_err(|error| ErrorWrapper::open_error(&self.file_name, error))?;
+            .map_err(|error| ErrorWrapper::new_open_error(&self.file_name, error))?;
         for alias in aliases {
             writer
                 .write_all(format!("{}\n", alias).as_bytes())
-                .map_err(|error| ErrorWrapper::write_error(&self.file_name, error))?;
+                .map_err(|error| ErrorWrapper::new_write_error(&self.file_name, error))?;
         }
         Ok(())
     }
@@ -61,7 +61,7 @@ impl<'a> AliasesFile {
             .write(true)
             .open(&self.file_name)
             .map(BufWriter::new)
-            .map_err(|error| ErrorWrapper::open_error(&self.file_name, error))?;
+            .map_err(|error| ErrorWrapper::new_open_error(&self.file_name, error))?;
         let retained_lines = (&self.lines).iter().filter(|line| match line.alias() {
             Some(Ok(alias)) => !aliases.contains(&alias),
             _ => true,
@@ -69,7 +69,7 @@ impl<'a> AliasesFile {
         for line in retained_lines {
             writer
                 .write_all(format!("{}\n", line.text()).as_bytes())
-                .map_err(|error| ErrorWrapper::write_error(&self.file_name, error))?;
+                .map_err(|error| ErrorWrapper::new_write_error(&self.file_name, error))?;
         }
         Ok(())
     }
@@ -77,7 +77,7 @@ impl<'a> AliasesFile {
     pub fn is_valid(&self) -> Result<(), ErrorWrapper> {
         for alias in self.all_aliases() {
             if let Err(invalid_alias) = alias {
-                return Err(ErrorWrapper::invalid_alias_file_error(
+                return Err(ErrorWrapper::new_invalid_alias_file_error(
                     &self.file_name,
                     invalid_alias,
                 ));

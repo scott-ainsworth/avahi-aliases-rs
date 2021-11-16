@@ -35,7 +35,7 @@ fn list(filename: &str) -> Result<(), ErrorWrapper> {
         match alias {
             Ok(alias) => println!("{}", alias),
             Err(invalid_alias) => {
-                println!("ERROR: {}", ErrorWrapper::invalid_alias_error(invalid_alias))
+                println!("ERROR: {}", ErrorWrapper::new_invalid_alias_error(invalid_alias))
             },
         }
     }
