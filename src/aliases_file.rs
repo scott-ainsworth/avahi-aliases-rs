@@ -4,7 +4,8 @@ use std::collections::HashSet;
 use std::io::{BufWriter, Read, Write};
 use std::{self, fs, str};
 
-use crate::{validation, ErrorWrapper, Line};
+use crate::{validate_aliases, ErrorWrapper, Line};
+use crate::alias::Alias;
 
 #[derive(Debug)]
 pub struct AliasesFile {
@@ -12,10 +13,16 @@ pub struct AliasesFile {
     lines: Vec<Line>,
 }
 
-impl AliasesFile {
-    /// Return a vector containing the aliases
-    pub fn aliases(&self) -> Vec<&str> {
+impl<'a> AliasesFile {
+    /// Return a vector containing the aliases.
+    /// Note: this function returns both valid and invalid aliases.
+    pub fn all_aliases(&self) -> Vec<Alias<'_>> {
         self.lines.iter().filter_map(|line| line.alias()).collect()
+    }
+
+    /// Return a vector of valid aliases.
+    pub fn aliases(&self) -> Vec<&str> {
+        self.lines.iter().filter_map(|line| line.alias().map(|a| a.ok()).flatten()).collect()
     }
 
     pub fn from_file(filename: &str) -> Result<Self, ErrorWrapper> {
@@ -33,9 +40,7 @@ impl AliasesFile {
     }
 
     pub fn append(&self, aliases: &[&str]) -> Result<(), ErrorWrapper> {
-        for alias in aliases {
-            validation::validate_alias(alias)?;
-        }
+        validate_aliases!(aliases);
         let mut writer = fs::OpenOptions::new()
             .append(true)
             .open(&self.file_name)
@@ -50,6 +55,7 @@ impl AliasesFile {
     }
 
     pub fn remove(&self, aliases: Vec<&str>) -> Result<(), ErrorWrapper> {
+        validate_aliases!(aliases);
         let aliases: HashSet<&str> = aliases.into_iter().collect();
         let mut writer = fs::OpenOptions::new()
             .truncate(true)
@@ -58,13 +64,25 @@ impl AliasesFile {
             .map(BufWriter::new)
             .map_err(|error| ErrorWrapper::open_error(&self.file_name, error))?;
         let retained_lines = (&self.lines).iter().filter(|line| match line.alias() {
-            Some(alias) => !aliases.contains(alias),
+            Some(Ok(alias)) => !aliases.contains(alias),
             _ => true,
         });
         for line in retained_lines {
             writer
                 .write_all(format!("{}\n", line.text()).as_bytes())
                 .map_err(|error| ErrorWrapper::write_error(&self.file_name, error))?;
+        }
+        Ok(())
+    }
+
+    pub fn is_valid(&self) -> Result<(), ErrorWrapper> {
+        for alias in self.all_aliases() {
+            if let Err(invalid_alias) = alias {
+                return Err(ErrorWrapper::invalid_alias_file_error(
+                    &self.file_name,
+                    invalid_alias,
+                ));
+            }
         }
         Ok(())
     }
@@ -126,11 +144,11 @@ mod tests {
             if n >= 2 {
                 aliases_file
                     .remove(vec!["a0.local", "a2.local"])
-                    .unwrap_or_else(|error| panic!("Removed failed: {}", error));
+                    .unwrap_or_else(|error| panic!("Remove failed: {}", error));
             } else if n > 0 {
                 aliases_file
                     .remove(vec!["a0.local"])
-                    .unwrap_or_else(|error| panic!("Removed failed: {}", error));
+                    .unwrap_or_else(|error| panic!("Remove failed: {}", error));
             }
             let aliases_file = AliasesFile::from_file(REMOVE_TEST_FILE).unwrap();
             let aliases = aliases_file.aliases();

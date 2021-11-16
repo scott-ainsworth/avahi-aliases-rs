@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 
 use avahi_aliases as lib;
-use lib::{logging, AliasesFile, Command, CommandOpts, ErrorWrapper};
+use lib::{alias, logging, validate_aliases, AliasesFile, Command, CommandOpts, ErrorWrapper};
 
 #[paw::main]
 fn main(opts: CommandOpts) {
@@ -14,12 +14,14 @@ fn main(opts: CommandOpts) {
         Command::Remove { aliases } => remove(&opts.common.file, &aliases),
     };
     if let Err(error) = result {
-        log::error!("{}", error);
+        log::error!("Error: {}", error);
     }
 }
 
 fn add(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
+    validate_aliases!(arg_aliases);
     let file = AliasesFile::from_file(filename)?;
+    file.is_valid()?;
     let file_aliases: HashSet<&str> = file.aliases().into_iter().collect();
     let (_, new_aliases) = split_aliases(&file_aliases, arg_aliases);
     for alias in new_aliases.iter() {
@@ -30,14 +32,21 @@ fn add(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
 
 fn list(filename: &str) -> Result<(), ErrorWrapper> {
     let file = AliasesFile::from_file(filename)?;
-    for alias in file.aliases() {
-        println!("{}", alias);
+    for alias in file.all_aliases() {
+        match alias {
+            Ok(alias) => println!("{}", alias),
+            Err(invalid_alias) => {
+                println!("ERROR: {}", ErrorWrapper::invalid_alias_error(invalid_alias))
+            },
+        }
     }
     Ok(())
 }
 
 fn remove(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
+    validate_aliases!(arg_aliases);
     let file = AliasesFile::from_file(filename)?;
+    file.is_valid()?;
     let file_aliases: HashSet<&str> = file.aliases().into_iter().collect();
     let (extant_aliases, _) = split_aliases(&file_aliases, arg_aliases);
     for alias in extant_aliases.iter() {

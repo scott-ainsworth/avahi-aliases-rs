@@ -2,6 +2,7 @@
 
 #![warn(clippy::all, rust_2018_idioms)]
 
+pub mod alias;
 mod aliases_file;
 pub use aliases_file::AliasesFile;
 mod error;
@@ -11,6 +12,5 @@ pub use line::Line;
 pub mod logging;
 mod options;
 pub use options::{Command, CommandOpts, CommonOpts, DaemonOpts};
-mod validation;
 
 // end

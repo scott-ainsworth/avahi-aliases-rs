@@ -1,6 +1,6 @@
 #![warn(clippy::all)]
 
-use structopt::{self, StructOpt};
+pub use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "avahi-alias", about = "Maintain /etc/avahi/avahi-aliases")]
@@ -19,6 +19,10 @@ pub struct DaemonOpts {
     /// Common options (verbose, debug, & filename)
     #[structopt(flatten)]
     pub common: CommonOpts,
+
+    /// Log to syslog (vice console)
+    #[structopt(short, long)]
+    pub syslog: bool,
 }
 
 #[derive(Debug, StructOpt)]

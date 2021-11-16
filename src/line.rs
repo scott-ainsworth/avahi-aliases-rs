@@ -1,5 +1,7 @@
 #![warn(clippy::all)]
 
+use crate::alias::{self, Alias};
+
 #[derive(Debug)]
 pub struct Line {
     line: String,
@@ -7,7 +9,10 @@ pub struct Line {
 
 impl Line {
     pub fn new(line: String) -> Self { Self { line } }
-    pub fn alias(&self) -> Option<&str> { clean_alias(&self.line) }
+    pub fn alias(&self) -> Option<Alias<'_>> {
+        let raw_alias = clean_alias(&self.line);
+        raw_alias.map(|a| alias::new(a))
+    }
     pub fn text(&self) -> &str { &self.line }
 }
 
@@ -49,7 +54,7 @@ mod tests {
     fn alias_only_yields_alias() {
         let data = ["a.local", "xyzzy.local"];
         for text in data {
-            assert_eq!(alias_from_text!(text), text);
+            assert_eq!(alias_from_text!(text).unwrap(), text);
         }
     }
 
@@ -67,7 +72,7 @@ mod tests {
             " \t a.local \t ",
         ];
         for text in data {
-            assert_eq!(alias_from_text!(text), "a.local");
+            assert_eq!(alias_from_text!(text).unwrap(), "a.local");
         }
     }
 
@@ -81,7 +86,7 @@ mod tests {
             "a.local # A Long, Long Comment",
         ];
         for text in data {
-            assert_eq!(alias_from_text!(text), "a.local");
+            assert_eq!(alias_from_text!(text).unwrap(), "a.local");
         }
     }
 
@@ -102,7 +107,7 @@ mod tests {
             " \t a.local # \t Comment \t ",
         ];
         for text in data {
-            assert_eq!(alias_from_text!(text), "a.local");
+            assert_eq!(alias_from_text!(text).unwrap(), "a.local");
         }
     }
 
@@ -110,7 +115,7 @@ mod tests {
     fn whitespace_lines_yield_none() {
         let data = ["", " ", "  ", "\t", "\t", "\t\t", " \t ", " \t ", " \t \t "];
         for text in data {
-            assert_eq!(option_from_text!(text), None)
+            assert!(option_from_text!(text).is_none())
         }
     }
 
@@ -118,7 +123,7 @@ mod tests {
     fn comment_only_lines_yield_none() {
         let data = ["# Comment", " # Comment", " # Comment    "];
         for text in data {
-            assert_eq!(option_from_text!(text), None)
+            assert!(option_from_text!(text).is_none())
         }
     }
 }
