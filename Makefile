@@ -49,6 +49,16 @@ target/release/avahi-alias target/release/avahi-alias-daemon: $(lib_source) $(al
 	strip $@
 
 ########################################
+# DOCUMENTATION
+########################################
+
+.PHONY: doc
+
+doc:
+	cargo test --no-fail-fast --doc
+	cargo doc --no-deps --document-private-items
+
+########################################
 # UTILITY
 ########################################
 

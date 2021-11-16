@@ -1,11 +1,10 @@
 #![warn(clippy::all)]
 
-use std::collections::HashSet;
 use std::io::{BufWriter, Read, Write};
 use std::{self, fs, str};
 
-use crate::{validate_aliases, ErrorWrapper, Line};
-use crate::alias::Alias;
+use crate::alias::{self, Alias};
+use crate::{ErrorWrapper, Line};
 
 #[derive(Debug)]
 pub struct AliasesFile {
@@ -40,7 +39,7 @@ impl<'a> AliasesFile {
     }
 
     pub fn append(&self, aliases: &[&str]) -> Result<(), ErrorWrapper> {
-        validate_aliases!(aliases);
+        alias::validate_aliases(aliases)?;
         let mut writer = fs::OpenOptions::new()
             .append(true)
             .open(&self.file_name)
@@ -54,9 +53,9 @@ impl<'a> AliasesFile {
         Ok(())
     }
 
-    pub fn remove(&self, aliases: Vec<&str>) -> Result<(), ErrorWrapper> {
-        validate_aliases!(aliases);
-        let aliases: HashSet<&str> = aliases.into_iter().collect();
+    pub fn remove(&self, aliases: &[&str]) -> Result<(), ErrorWrapper> {
+        alias::validate_aliases(aliases)?;
+        // let aliases: HashSet<&&str> = HashSet::from_iter(aliases.iter());
         let mut writer = fs::OpenOptions::new()
             .truncate(true)
             .write(true)
@@ -64,7 +63,7 @@ impl<'a> AliasesFile {
             .map(BufWriter::new)
             .map_err(|error| ErrorWrapper::open_error(&self.file_name, error))?;
         let retained_lines = (&self.lines).iter().filter(|line| match line.alias() {
-            Some(Ok(alias)) => !aliases.contains(alias),
+            Some(Ok(alias)) => !aliases.contains(&alias),
             _ => true,
         });
         for line in retained_lines {
@@ -143,11 +142,11 @@ mod tests {
             let aliases_file = AliasesFile::from_file(REMOVE_TEST_FILE).unwrap();
             if n >= 2 {
                 aliases_file
-                    .remove(vec!["a0.local", "a2.local"])
+                    .remove(&["a0.local", "a2.local"])
                     .unwrap_or_else(|error| panic!("Remove failed: {}", error));
             } else if n > 0 {
                 aliases_file
-                    .remove(vec!["a0.local"])
+                    .remove(&["a0.local"])
                     .unwrap_or_else(|error| panic!("Remove failed: {}", error));
             }
             let aliases_file = AliasesFile::from_file(REMOVE_TEST_FILE).unwrap();

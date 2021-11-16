@@ -2,8 +2,7 @@
 
 use std::collections::HashSet;
 
-use avahi_aliases as lib;
-use lib::{alias, logging, validate_aliases, AliasesFile, Command, CommandOpts, ErrorWrapper};
+use avahi_aliases::{alias, logging, AliasesFile, Command, CommandOpts, ErrorWrapper};
 
 #[paw::main]
 fn main(opts: CommandOpts) {
@@ -19,7 +18,7 @@ fn main(opts: CommandOpts) {
 }
 
 fn add(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
-    validate_aliases!(arg_aliases);
+    alias::validate_aliases(arg_aliases)?;
     let aliases_file = AliasesFile::from_file(filename)?;
     aliases_file.is_valid()?;
     let file_aliases: HashSet<&str> = aliases_file.aliases().into_iter().collect();
@@ -44,7 +43,7 @@ fn list(filename: &str) -> Result<(), ErrorWrapper> {
 }
 
 fn remove(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
-    validate_aliases!(arg_aliases);
+    alias::validate_aliases(arg_aliases)?;
     let aliases_file = AliasesFile::from_file(filename)?;
     aliases_file.is_valid()?;
     let file_aliases: HashSet<&str> = aliases_file.aliases().into_iter().collect();
@@ -52,7 +51,7 @@ fn remove(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
     for alias in extant_aliases.iter() {
         log::info!("Removing alias {:?} from {}", alias, filename);
     }
-    aliases_file.remove(extant_aliases)
+    aliases_file.remove(&extant_aliases)
 }
 
 fn split_aliases<'a>(
