@@ -4,7 +4,8 @@ use std::io::{BufWriter, Read, Write};
 use std::{self, fs, str};
 
 use crate::alias::{self, Alias};
-use crate::{ErrorWrapper, Line};
+use crate::error::ErrorWrapper;
+use crate::Line;
 
 #[derive(Debug)]
 pub struct AliasesFile {

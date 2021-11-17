@@ -16,7 +16,7 @@ pub enum LoggingError {
 }
 
 /// Initialize logging
-pub fn init_console(verbose: bool, debug: bool) {
+pub fn init_console_logging(verbose: bool, debug: bool) {
     env_logger::builder()
         .format_target(false)
         .format_level(false)
@@ -26,7 +26,7 @@ pub fn init_console(verbose: bool, debug: bool) {
         .init();
 }
 
-pub fn init_syslog(verbose: bool, debug: bool) -> Result<(), LoggingError> {
+pub fn init_syslog_logging(verbose: bool, debug: bool) -> Result<(), LoggingError> {
     let formatter = syslog::Formatter3164 {
         facility: syslog::Facility::LOG_DAEMON,
         hostname: None,
