@@ -1,75 +1,132 @@
+//! Error consolidation
+//!
+//! Consolidate errors so that fatal, but handlable errors can be pushed up the stack
+//! to user-facing and/or logging code.
+
 #![warn(clippy::all)]
 
 use std::io;
 
 use thiserror::Error;
 
-/// ErrorWrapper enumerates all errors passed to main
+/// An enum to consolidate all errors passed to user-aware and logging code.
 #[derive(Error, Debug)]
 pub enum ErrorWrapper {
     /// An invalid alias
     #[error(r#"invalid alias: "{alias}""#)]
-    InvalidAliasError { alias: String },
+    InvalidAliasError {
+        /// The invalid alias
+        alias: String,
+    },
 
     /// An invalid alias file (invalid alias found in the alias file)
     #[error(r#"invalid alias "{alias}" found in "{file_name}""#)]
-    InvalidAliasFileError { file_name: String, alias: String },
+    InvalidAliasFileError {
+        /// Name of the aliases file containing the error
+        file_name: String,
+        /// The invalid alias the caused the error
+        alias: String,
+    },
 
     /// An I/O error retrieving the aliases file metadata
     #[error(r#"could not get metadata for "{file_name}": {source}."#)]
-    MetadataError { file_name: String, source: io::Error },
+    MetadataError {
+        /// Name of the aliases file
+        file_name: String,
+        /// The source `io::Error`
+        source: io::Error,
+    },
 
     /// An I/O error while opeing the aliases file
     #[error(r#"could not open "{}": {source}."#, file_name)]
-    OpenError { file_name: String, source: io::Error },
+    OpenError {
+        /// Name of the aliases file
+        file_name: String,
+        /// The source `io::Error`
+        source: io::Error,
+    },
 
     // /// An I/O error
     // #[error("could not publish aliases")]
     // PublishError { source: io::Error },
     /// An I/O error while reading the aliases file
     #[error(r#"could not read "{}": {source}."#, file_name)]
-    ReadError { file_name: String, source: io::Error },
+    ReadError {
+        /// Name of the aliases file
+        file_name: String,
+        /// The source `io::Error`
+        source: io::Error,
+    },
 
     /// An I/O error writing to the aliases file
     #[error(r#"could not write "{}": {source}."#, .file_name)]
-    WriteError { file_name: String, source: io::Error },
+    WriteError {
+        /// Name of the aliases file
+        file_name: String,
+        /// The source `io::Error`
+        source: io::Error,
+    },
 }
 
 impl ErrorWrapper {
-    /// initialize a new InvalidAliasError
-    pub fn invalid_alias_error(alias: &str) -> ErrorWrapper {
-        ErrorWrapper::InvalidAliasError { alias: alias.to_owned() }
+    /// Initialize a new InvalidAliasError
+    ///
+    /// A helper function that copies `alias` to a `String` owned by
+    /// the `InvalidAliasError`.
+    pub fn new_invalid_alias_error<A>(alias: A) -> ErrorWrapper
+    where
+        A: Into<String>, {
+        ErrorWrapper::InvalidAliasError { alias: alias.into() }
     }
 
-    /// initialize a new InvalidAliasFileError
-    pub fn invalid_alias_file_error(file_name: &str, alias: &str) -> ErrorWrapper {
-        ErrorWrapper::InvalidAliasFileError {
-            file_name: file_name.to_owned(),
-            alias: alias.to_owned(),
-        }
+    /// Initialize a new InvalidAliasFileError
+    ///
+    /// A helper function that copies `file_name` and `alias` to `String`s owned by
+    /// the `InvalidAliasFileError`.
+    pub fn new_invalid_alias_file_error<F, A>(file_name: F, alias: A) -> ErrorWrapper
+    where
+        F: Into<String>,
+        A: Into<String>, {
+        ErrorWrapper::InvalidAliasFileError { file_name: file_name.into(), alias: alias.into() }
     }
 
-    /// initialize a new MetadataError
-    pub fn metadata_error(file_name: &str, source: io::Error) -> ErrorWrapper {
-        ErrorWrapper::MetadataError { file_name: file_name.to_owned(), source }
+    /// Initialize a new MetadataError
+    ///
+    /// A helper function that copies `file_name` to a `String`s owned by
+    /// the `MetadataError`.
+    pub fn new_metadata_error<F>(file_name: F, source: io::Error) -> ErrorWrapper
+    where
+        F: Into<String>, {
+        ErrorWrapper::MetadataError { file_name: file_name.into(), source }
     }
 
-    /// initialize a new OpenError
-    pub fn open_error(file_name: &str, source: io::Error) -> ErrorWrapper {
-        ErrorWrapper::OpenError { file_name: file_name.to_owned(), source }
+    /// Initialize a new OpenError
+    ///
+    /// A helper function that copies `file_name` to a `String`s owned by
+    /// the `OpenError`.
+    pub fn new_open_error<F>(file_name: F, source: io::Error) -> ErrorWrapper
+    where
+        F: Into<String>, {
+        ErrorWrapper::OpenError { file_name: file_name.into(), source }
     }
 
-    /// initialize a new ReadError
-    pub fn read_error(file_name: &str, source: io::Error) -> ErrorWrapper {
-        ErrorWrapper::ReadError { file_name: file_name.to_owned(), source }
+    /// Initialize a new ReadError
+    ///
+    /// A helper function that copies `file_name` to a `String`s owned by
+    /// the `ReadError`.
+    pub fn new_read_error<F>(file_name: F, source: io::Error) -> ErrorWrapper
+    where
+        F: Into<String>, {
+        ErrorWrapper::ReadError { file_name: file_name.into(), source }
     }
 
-    /// initialize a new WriteError
-    pub fn write_error(file_name: &str, source: io::Error) -> ErrorWrapper {
-        ErrorWrapper::WriteError { file_name: file_name.to_owned(), source }
+    /// Initialize a new WriteError
+    ///
+    /// A helper function that copies `file_name` to a `String`s owned by
+    /// the `WriteError`.
+    pub fn new_write_error<F>(file_name: F, source: io::Error) -> ErrorWrapper
+    where
+        F: Into<String>, {
+        ErrorWrapper::WriteError { file_name: file_name.into(), source }
     }
 }
-
-// impl fmt::Display for ErrorWrapper {
-//     rm fmt(&self, f: &mut fmt::Formatter<'_>)
-// }

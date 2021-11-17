@@ -6,8 +6,7 @@ use ::time::format_description::well_known::Rfc3339;
 use ::time::OffsetDateTime;
 use structopt::StructOpt;
 use anyhow::Result;
-use avahi_aliases as lib;
-use lib::{logging, AliasesFile, DaemonOpts, ErrorWrapper};
+use avahi_aliases::{init_console_logging, AliasesFile, DaemonOpts, ErrorWrapper};
 
 #[derive(PartialEq)]
 struct ModifiedSize {
@@ -17,7 +16,7 @@ struct ModifiedSize {
 
 #[paw::main]
 fn main(opts: DaemonOpts) {
-    logging::init_console(opts.common.verbose, opts.common.debug);
+    init_console_logging(opts.common.verbose, opts.common.debug);
     signon();
 
     let file_name = opts.common.file.as_str();

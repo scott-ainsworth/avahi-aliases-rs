@@ -2,12 +2,13 @@
 
 use std::collections::HashSet;
 
-use avahi_aliases as lib;
-use lib::{alias, logging, validate_aliases, AliasesFile, Command, CommandOpts, ErrorWrapper};
+use avahi_aliases::{
+    init_console_logging, validate_aliases, AliasesFile, Command, CommandOpts, ErrorWrapper,
+};
 
 #[paw::main]
 fn main(opts: CommandOpts) {
-    logging::init_console(opts.common.verbose, opts.common.debug);
+    init_console_logging(opts.common.verbose, opts.common.debug);
     let result = match opts.cmd {
         Command::Add { aliases } => add(&opts.common.file, &aliases),
         Command::List {} => list(&opts.common.file),
@@ -19,7 +20,7 @@ fn main(opts: CommandOpts) {
 }
 
 fn add(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
-    validate_aliases!(arg_aliases);
+    validate_aliases(arg_aliases)?;
     let aliases_file = AliasesFile::from_file(filename)?;
     aliases_file.is_valid()?;
     let file_aliases: HashSet<&str> = aliases_file.aliases().into_iter().collect();
@@ -36,7 +37,7 @@ fn list(filename: &str) -> Result<(), ErrorWrapper> {
         match alias {
             Ok(alias) => println!("{}", alias),
             Err(invalid_alias) => {
-                println!("ERROR: {}", ErrorWrapper::invalid_alias_error(invalid_alias))
+                println!("ERROR: {}", ErrorWrapper::new_invalid_alias_error(invalid_alias))
             },
         }
     }
@@ -44,7 +45,7 @@ fn list(filename: &str) -> Result<(), ErrorWrapper> {
 }
 
 fn remove(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
-    validate_aliases!(arg_aliases);
+    validate_aliases(arg_aliases)?;
     let aliases_file = AliasesFile::from_file(filename)?;
     aliases_file.is_valid()?;
     let file_aliases: HashSet<&str> = aliases_file.aliases().into_iter().collect();
@@ -52,7 +53,7 @@ fn remove(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
     for alias in extant_aliases.iter() {
         log::info!("Removing alias {:?} from {}", alias, filename);
     }
-    aliases_file.remove(extant_aliases)
+    aliases_file.remove(&extant_aliases)
 }
 
 fn split_aliases<'a>(

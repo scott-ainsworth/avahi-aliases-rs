@@ -1,11 +1,11 @@
 #![warn(clippy::all)]
 
-use std::collections::HashSet;
 use std::io::{BufWriter, Read, Write};
 use std::{self, fs, str};
 
-use crate::{validate_aliases, ErrorWrapper, Line};
-use crate::alias::Alias;
+use crate::alias::{self, Alias};
+use crate::error::ErrorWrapper;
+use crate::Line;
 
 #[derive(Debug)]
 pub struct AliasesFile {
@@ -29,10 +29,10 @@ impl<'a> AliasesFile {
         let mut file = fs::OpenOptions::new()
             .read(true)
             .open(filename)
-            .map_err(|error| ErrorWrapper::open_error(filename, error))?;
+            .map_err(|error| ErrorWrapper::new_open_error(filename, error))?;
         let mut buf = String::new();
         file.read_to_string(&mut buf)
-            .map_err(|error| ErrorWrapper::read_error(filename, error))?;
+            .map_err(|error| ErrorWrapper::new_read_error(filename, error))?;
         Ok(AliasesFile {
             file_name: filename.to_owned(),
             lines: buf.lines().map(|text| Line::new(text.to_owned())).collect(),
@@ -40,37 +40,37 @@ impl<'a> AliasesFile {
     }
 
     pub fn append(&self, aliases: &[&str]) -> Result<(), ErrorWrapper> {
-        validate_aliases!(aliases);
+        alias::validate_aliases(aliases)?;
         let mut writer = fs::OpenOptions::new()
             .append(true)
             .open(&self.file_name)
             .map(BufWriter::new)
-            .map_err(|error| ErrorWrapper::open_error(&self.file_name, error))?;
+            .map_err(|error| ErrorWrapper::new_open_error(&self.file_name, error))?;
         for alias in aliases {
             writer
                 .write_all(format!("{}\n", alias).as_bytes())
-                .map_err(|error| ErrorWrapper::write_error(&self.file_name, error))?;
+                .map_err(|error| ErrorWrapper::new_write_error(&self.file_name, error))?;
         }
         Ok(())
     }
 
-    pub fn remove(&self, aliases: Vec<&str>) -> Result<(), ErrorWrapper> {
-        validate_aliases!(aliases);
-        let aliases: HashSet<&str> = aliases.into_iter().collect();
+    pub fn remove(&self, aliases: &[&str]) -> Result<(), ErrorWrapper> {
+        alias::validate_aliases(aliases)?;
+        // let aliases: HashSet<&&str> = HashSet::from_iter(aliases.iter());
         let mut writer = fs::OpenOptions::new()
             .truncate(true)
             .write(true)
             .open(&self.file_name)
             .map(BufWriter::new)
-            .map_err(|error| ErrorWrapper::open_error(&self.file_name, error))?;
+            .map_err(|error| ErrorWrapper::new_open_error(&self.file_name, error))?;
         let retained_lines = (&self.lines).iter().filter(|line| match line.alias() {
-            Some(Ok(alias)) => !aliases.contains(alias),
+            Some(Ok(alias)) => !aliases.contains(&alias),
             _ => true,
         });
         for line in retained_lines {
             writer
                 .write_all(format!("{}\n", line.text()).as_bytes())
-                .map_err(|error| ErrorWrapper::write_error(&self.file_name, error))?;
+                .map_err(|error| ErrorWrapper::new_write_error(&self.file_name, error))?;
         }
         Ok(())
     }
@@ -78,7 +78,7 @@ impl<'a> AliasesFile {
     pub fn is_valid(&self) -> Result<(), ErrorWrapper> {
         for alias in self.all_aliases() {
             if let Err(invalid_alias) = alias {
-                return Err(ErrorWrapper::invalid_alias_file_error(
+                return Err(ErrorWrapper::new_invalid_alias_file_error(
                     &self.file_name,
                     invalid_alias,
                 ));
@@ -143,11 +143,11 @@ mod tests {
             let aliases_file = AliasesFile::from_file(REMOVE_TEST_FILE).unwrap();
             if n >= 2 {
                 aliases_file
-                    .remove(vec!["a0.local", "a2.local"])
+                    .remove(&["a0.local", "a2.local"])
                     .unwrap_or_else(|error| panic!("Remove failed: {}", error));
             } else if n > 0 {
                 aliases_file
-                    .remove(vec!["a0.local"])
+                    .remove(&["a0.local"])
                     .unwrap_or_else(|error| panic!("Remove failed: {}", error));
             }
             let aliases_file = AliasesFile::from_file(REMOVE_TEST_FILE).unwrap();

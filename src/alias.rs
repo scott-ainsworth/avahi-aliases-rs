@@ -1,17 +1,26 @@
+//! Alias validation and error handling.
+//!
+//! Validate aliases and encapsulate the result in `std::result::Result` to simplify
+//! invalid aliases handling.
+
 #![warn(clippy::all)]
 
 use structopt::lazy_static::lazy_static;
 use regex::Regex;
 
+use crate::error::ErrorWrapper;
+
 /// A `Result` used to represents an alias, valid or invalid. A valid alias is represented
-/// as `Result::Ok<&str>`, where the **&str** is the alias (e.g. **gandalf.local**). An invalid
+/// as `Result::Ok<&str>`, where the **&str** is the alias (e.g. "gandalf.local"). An invalid
 /// alias is represented as `Result::Err<&str>`, where the **&str** is the invalid alias.
 ///
 /// # Examples
 ///
 /// ```
-/// let a1 = Alias::new("a1.local") // Ok("a1.local")
-/// let a2 = Alias::new("a*.local") // Err("a*.local")
+/// use avahi_aliases::new_alias;
+///
+/// let a1 = new_alias("a1.local"); // Ok("a1.local")
+/// let a2 = new_alias("a*.local"); // Err("a*.local")
 /// ```
 pub type Alias<'a> = Result<&'a str, &'a str>;
 
@@ -22,8 +31,10 @@ pub type Alias<'a> = Result<&'a str, &'a str>;
 /// # Examples
 ///
 /// ```
-/// alias::is_valid("a1.local") // true
-/// alias::is_valid("a*.local") // false
+/// use avahi_aliases::is_valid_alias;
+///
+/// is_valid_alias("a1.local"); // true
+/// is_valid_alias("a*.local"); // false
 /// ```
 ///
 /// # Notes
@@ -31,7 +42,7 @@ pub type Alias<'a> = Result<&'a str, &'a str>;
 /// - The current definition of a valid alias is very simple: a word comprising at least one
 ///   letter, digit, or hyphen followed by `.local`; and, the word must begin and end with a
 ///   letter or digit.
-pub fn is_valid(alias: &str) -> bool {
+pub fn is_valid_alias(alias: &str) -> bool {
     lazy_static! {
         static ref VALIDATION_RE: Regex =
             Regex::new(r#"^[a-z0-9]([a-z0-9-]*[a-z0-9])?\.local$"#).unwrap();
@@ -44,43 +55,47 @@ pub fn is_valid(alias: &str) -> bool {
 /// # Examples
 ///
 /// ```
-/// let a1 = Alias::new("a1.local") // Ok("a1.local")
-/// let a2 = Alias::new("a*.local") // Err("a*.local")
+/// use avahi_aliases::new_alias;
+///
+/// let a1 = new_alias("a1.local"); // Ok("a1.local")
+/// let a2 = new_alias("a*.local"); // Err("a*.local")
 /// ```
-pub fn new(alias: &str) -> Alias<'_> {
-    match is_valid(alias) {
+pub fn new_alias(alias: &str) -> Alias<'_> {
+    match is_valid_alias(alias) {
         true => Ok(alias),
         false => Err(alias),
     }
 }
 
-/// Ensures all aliases in collection all valid.
+/// Ensure all aliases in a collection are valid.
 ///
-/// Causes the calling function to return an `Err(ErrorWrapper::InvalidAliasError)` if any
-/// alias is invalid. Otherwise, the calling function continues execution.
+/// If an invalid alias is found, returns `Err(ErrorWrapper::InvalidAliasError)` for the
+/// invalid alias. If all aliases are valid, , `Ok(())` is returned. Error checking stops
+/// with the first error.
 ///
 /// # Examples
 ///
 /// ```
+/// use avahi_aliases::{validate_aliases, ErrorWrapper};
+///
 /// fn some_action(aliases: &[&str]) -> Result<(), ErrorWrapper> {
-///     validate_aliases(aliases);  // returns if any aliases are invalid
-///     // execution continues if all aliases are valid
-///     ...
+///     validate_aliases(aliases)?; // pass the error up the stack
+///
+///     // all aliases are valid
+///     // ...
+///
+///     Ok(()) // return Ok(()) on success
 /// }
 /// ```
-///
-/// # Notes
-/// - This macro is used to validate aliases entered on the command line; and, to stop
-/// execution if invalid aliases are found.
-#[macro_export]
-macro_rules! validate_aliases {
-    ( $aliases:ident ) => {
-        for alias in $aliases.iter() {
-            if !crate::alias::is_valid(&alias) {
-                return Err(ErrorWrapper::invalid_alias_error(alias))
-            }
-        }
-    };
+pub fn validate_aliases<T>(aliases: &[T]) -> Result<(), ErrorWrapper>
+where
+    T: AsRef<str>, {
+    match aliases.iter().find(|a| !is_valid_alias(a.as_ref())) {
+        Some(invalid_alias) => {
+            Err(ErrorWrapper::new_invalid_alias_error(invalid_alias.as_ref()))
+        },
+        None => Ok(()),
+    }
 }
 
 //**********************************************************************************************
@@ -89,8 +104,7 @@ macro_rules! validate_aliases {
 
 #[cfg(test)]
 mod tests {
-    use crate::ErrorWrapper;
-    use super::{is_valid, new};
+    use super::{is_valid_alias, new_alias, validate_aliases};
 
     static VALID_ALIASES: [&str; 4] = ["a.local", "xyzzy.local", "b0.local", "a-z.local"];
     static INVALID_ALIASES: [&str; 5] =
@@ -98,49 +112,43 @@ mod tests {
 
     #[test]
     fn is_valid_returns_true_for_valid_alias() {
-        VALID_ALIASES.iter().for_each(|a| assert!(is_valid(a)))
+        VALID_ALIASES.iter().for_each(|a| assert!(is_valid_alias(a)))
     }
 
     #[test]
     fn is_valid_returns_false_for_invalid_alias() {
-        INVALID_ALIASES.iter().for_each(|a| assert!(!is_valid(a)))
+        INVALID_ALIASES.iter().for_each(|a| assert!(!is_valid_alias(a)))
     }
 
     #[test]
     fn validate_returns_ok_for_valid_alias() {
-        VALID_ALIASES.iter().for_each(|a| assert!(new(a).is_ok()))
+        VALID_ALIASES.iter().for_each(|a| assert!(new_alias(a).is_ok()))
     }
 
     #[test]
     fn validate_returns_err_for_invalid_alias() {
-        INVALID_ALIASES.iter().for_each(|a| assert!(new(a).is_err()))
+        INVALID_ALIASES.iter().for_each(|a| assert!(new_alias(a).is_err()))
     }
 
     #[test]
     fn validate_saves_valid_alias_as_ok() {
-        VALID_ALIASES.iter().for_each(|a| assert_eq!(new(a).unwrap(), *a))
+        VALID_ALIASES.iter().for_each(|a| assert_eq!(new_alias(a).unwrap(), *a))
     }
 
     #[test]
     fn validate_saves_invalid_alias_as_err() {
-        INVALID_ALIASES.iter().for_each(|a| assert_eq!(new(a).unwrap_err(), *a))
+        INVALID_ALIASES.iter().for_each(|a| assert_eq!(new_alias(a).unwrap_err(), *a))
     }
 
     #[test]
     fn validate_aliases_returns_ok_for_valid_aliases() {
-        fn macro_wrapper() -> Result<(), ErrorWrapper> {
-            validate_aliases!(VALID_ALIASES);
-            Ok(())
-        }
-        assert!(macro_wrapper().is_ok())
+        let r = validate_aliases(&VALID_ALIASES);
+        assert!(r.is_ok())
     }
 
     #[test]
     fn validate_aliases_returns_err_for_invalid_aliases() {
-        fn macro_wrapper() -> Result<(), ErrorWrapper> {
-            validate_aliases!(INVALID_ALIASES);
-            Ok(())
-        }
-        assert!(macro_wrapper().is_err())
+        let r = validate_aliases(&INVALID_ALIASES);
+        assert!(r.is_err())
     }
 }
