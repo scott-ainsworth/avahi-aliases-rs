@@ -2,6 +2,7 @@
 
 #![warn(clippy::all, rust_2018_idioms)]
 
+pub mod alias;
 mod aliases_file;
 pub use aliases_file::AliasesFile;
 mod error;

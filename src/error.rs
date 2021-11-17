@@ -8,26 +8,30 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum ErrorWrapper {
     /// An invalid alias
-    #[error("invalid alias: \"{alias}\".")]
+    #[error(r#"invalid alias: "{alias}""#)]
     InvalidAliasError { alias: String },
 
+    /// An invalid alias file (invalid alias found in the alias file)
+    #[error(r#"invalid alias "{alias}" found in "{file_name}""#)]
+    InvalidAliasFileError { file_name: String, alias: String },
+
     /// An I/O error retrieving the aliases file metadata
-    #[error("could not get metadata for \"{file_name}\": {source}.")]
+    #[error(r#"could not get metadata for "{file_name}": {source}."#)]
     MetadataError { file_name: String, source: io::Error },
 
     /// An I/O error while opeing the aliases file
-    #[error("could not open \"{}\": {source}.", file_name.to_owned())]
+    #[error(r#"could not open "{}": {source}."#, file_name)]
     OpenError { file_name: String, source: io::Error },
 
     // /// An I/O error
     // #[error("could not publish aliases")]
     // PublishError { source: io::Error },
     /// An I/O error while reading the aliases file
-    #[error("could not read \"{}\": {source}.", file_name.to_owned())]
+    #[error(r#"could not read "{}": {source}."#, file_name)]
     ReadError { file_name: String, source: io::Error },
 
     /// An I/O error writing to the aliases file
-    #[error("could not write \"{}\": {source}.", .file_name)]
+    #[error(r#"could not write "{}": {source}."#, .file_name)]
     WriteError { file_name: String, source: io::Error },
 }
 
@@ -35,6 +39,14 @@ impl ErrorWrapper {
     /// initialize a new InvalidAliasError
     pub fn invalid_alias_error(alias: &str) -> ErrorWrapper {
         ErrorWrapper::InvalidAliasError { alias: alias.to_owned() }
+    }
+
+    /// initialize a new InvalidAliasFileError
+    pub fn invalid_alias_file_error(file_name: &str, alias: &str) -> ErrorWrapper {
+        ErrorWrapper::InvalidAliasFileError {
+            file_name: file_name.to_owned(),
+            alias: alias.to_owned(),
+        }
     }
 
     /// initialize a new MetadataError
@@ -57,3 +69,7 @@ impl ErrorWrapper {
         ErrorWrapper::WriteError { file_name: file_name.to_owned(), source }
     }
 }
+
+// impl fmt::Display for ErrorWrapper {
+//     rm fmt(&self, f: &mut fmt::Formatter<'_>)
+// }
