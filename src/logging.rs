@@ -1,6 +1,5 @@
 #![warn(clippy::all)]
 
-// use std::error::Error;
 use thiserror::Error;
 
 /// LoggingError enumerates all errors returned by this module
@@ -15,7 +14,7 @@ pub enum LoggingError {
     SetLoggerError { source: log::SetLoggerError },
 }
 
-/// Initialize logging
+/// Initialize console logging
 pub fn init_console_logging(verbose: bool, debug: bool) {
     env_logger::builder()
         .format_target(false)
@@ -31,7 +30,7 @@ pub fn init_syslog_logging(verbose: bool, debug: bool) -> Result<(), LoggingErro
         facility: syslog::Facility::LOG_DAEMON,
         hostname: None,
         process: "avahi-alias-daemon".into(),
-        pid: 0,
+        pid: sysinfo::get_current_pid().unwrap(),
     };
     let logger = syslog::BasicLogger::new(
         syslog::unix(formatter).map_err(|source| LoggingError::SyslogError { source })?,
