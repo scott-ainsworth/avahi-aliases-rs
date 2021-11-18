@@ -70,7 +70,7 @@ fn load_aliases(
         file_name,
         last_modified.format(&Rfc3339).unwrap()
     );
-    AliasesFile::from_file(file_name)
+    AliasesFile::from_file(file_name, true)
 }
 
 fn publish_aliases<'a>(
