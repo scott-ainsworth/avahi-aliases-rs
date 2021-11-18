@@ -32,7 +32,6 @@ pub struct CommonOpts {
     pub verbose: bool,
 
     /// Prints detailed and debug messages
-    /// Note: debug has presidence over verbose
     #[structopt(short, long, global = true)]
     pub debug: bool,
 
@@ -59,8 +58,12 @@ pub enum Command {
     #[structopt(about = "Remove Aliases")]
     Remove {
         /// Aliases to remove
-        #[structopt(name = "ALIAS", required = true)]
+        #[structopt(name = "ALIAS", required_unless = "force")]
         aliases: Vec<String>,
+
+        /// Force removal of invalid aliases
+        #[structopt(long, global = true)]
+        force: bool,
     },
 
     #[structopt(about = "List existing Aliases")]

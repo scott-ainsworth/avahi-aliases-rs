@@ -33,6 +33,7 @@ fn load_publish_loop(file_name: &str, sleep_duration: time::Duration) -> Result<
     let mut modified_size = ModifiedSize { last_modified: time::UNIX_EPOCH, len: 0 };
 
     loop {
+        log::debug!("Retrieving metadata for {:?}", file_name);
         let new_modified_size = get_metadata(file_name)?;
         //.with_context(|| format!("could not load aliases from {:?}", file_name))?;
         if new_modified_size != modified_size {
@@ -49,7 +50,6 @@ fn load_publish_loop(file_name: &str, sleep_duration: time::Duration) -> Result<
 }
 
 fn get_metadata(file_name: &str) -> Result<ModifiedSize, ErrorWrapper> {
-    log::debug!("Retrieving metadata for {:?}", file_name);
     match fs::metadata(file_name) {
         Ok(metadata) => Ok(ModifiedSize {
             last_modified: metadata.modified().unwrap(),
@@ -70,7 +70,7 @@ fn load_aliases(
         file_name,
         last_modified.format(&Rfc3339).unwrap()
     );
-    AliasesFile::from_file(file_name)
+    AliasesFile::from_file(file_name, true)
 }
 
 fn publish_aliases<'a>(
@@ -82,8 +82,11 @@ fn publish_aliases<'a>(
         file_name,
         last_modified.format(&Rfc3339).unwrap()
     );
-    for alias in aliases_file.aliases() {
-        log::info!("Publishing alias {}", alias);
+    for alias in aliases_file.all_aliases() {
+        match alias {
+            Ok(a) => log::info!("Publishing alias {}", a),
+            Err(a) => log::info!(r#"WARNING: invalid alias "{}" ignored"#, a),
+        }
     }
     log::info!(
         "Published aliases from {:?} (modified {})",
