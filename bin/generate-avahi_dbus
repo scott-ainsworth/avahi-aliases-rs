@@ -1,0 +1,11 @@
+#!/bin/bash
+
+SED=$(which gsed || which sed)
+
+echo $'#![allow(clippy::all)]'
+dbus-codegen-rust --system-bus --client blocking --destination org.freedesktop.Avahi \
+| $SED \
+    -e $'/^use dbus;$/d' \
+    -e $'/^#\\[allow(unused_imports)\\]$/d' \
+    -e $'/^\s*fn /s/arg::Iter\>/&<\'_>/' \
+    -e $'/^\s*fn /s/arg::IterAppend\>/&<\'_>/'

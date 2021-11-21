@@ -9,9 +9,16 @@ use std::io;
 
 use thiserror::Error;
 
+use crate::LoggingError;
+
 /// An enum to consolidate all errors passed to user-aware and logging code.
 #[derive(Error, Debug)]
 pub enum ErrorWrapper {
+    /// An error setting up or using debug
+    //#[error(r#"D-Bus failure: {message}"#)]
+    #[error(r#"D-Bus failure: {message}"#)]
+    DBusError { message: String },
+
     /// An invalid alias
     #[error(r#"invalid alias: "{alias}""#)]
     InvalidAliasError {
@@ -27,6 +34,10 @@ pub enum ErrorWrapper {
         /// The invalid alias the caused the error
         alias: String,
     },
+
+    /// A logging error has occured
+    #[error(r#"logging error"#)]
+    LoggingError,
 
     /// An I/O error retrieving the aliases file metadata
     #[error(r#"could not get metadata for "{file_name}": {source}."#)]
@@ -66,6 +77,20 @@ pub enum ErrorWrapper {
         /// The source `io::Error`
         source: io::Error,
     },
+}
+
+/// Convert a `LoggingError` into an `ErrorWrapper`.
+impl From<LoggingError> for ErrorWrapper {
+    fn from(_: LoggingError) -> ErrorWrapper { ErrorWrapper::LoggingError }
+}
+
+/// Convert a `dbus::Error` into an `ErrorWrapper`.
+impl From<dbus::Error> for ErrorWrapper {
+    fn from(error: dbus::Error) -> ErrorWrapper {
+        ErrorWrapper::DBusError {
+            message: error.message().unwrap_or("Unknown error").to_owned(),
+        }
+    }
 }
 
 impl ErrorWrapper {

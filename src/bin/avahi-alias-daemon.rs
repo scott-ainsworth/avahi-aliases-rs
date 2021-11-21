@@ -7,7 +7,7 @@ use ::time::OffsetDateTime;
 use structopt::StructOpt;
 use anyhow::Result;
 use avahi_aliases::{
-    init_console_logging, init_syslog_logging, AliasesFile, DaemonOpts, ErrorWrapper,
+    init_console_logging, init_syslog_logging, AliasesFile, Avahi, DaemonOpts, ErrorWrapper,
     LoggingError,
 };
 
@@ -19,20 +19,23 @@ struct ModifiedSize {
 
 #[paw::main]
 fn main(opts: DaemonOpts) {
-    if let Err(error) = init_logging(opts.common.verbose, opts.common.debug, opts.syslog) {
-        eprintln!("Error: {}", error);
-        std::process::exit(0);
-    };
-    signon();
-
-    let file_name = opts.common.file.as_str();
-
-    let result = load_publish_loop(file_name, time::Duration::from_secs(5));
-    if let Err(error) = result {
-        eprintln!("Error: {}", error);
-        std::process::exit(1);
+    match exec(opts) {
+        Ok(_) => std::process::exit(0),
+        Err(error) => {
+            log::error!("Error: {}", error);
+            std::process::exit(1)
+        },
     }
-    std::process::exit(0);
+}
+
+fn exec(opts: DaemonOpts) -> Result<(), ErrorWrapper> {
+    init_logging(opts.common.verbose, opts.common.debug, opts.syslog)?;
+    signon_app();
+    let file_name = opts.common.file.as_str();
+    let avahi: Avahi = Avahi::new()?;
+    signon_avahi(&avahi)?;
+    load_publish_loop(&avahi, file_name, time::Duration::from_secs(5))?;
+    Ok(())
 }
 
 fn init_logging(verbose: bool, debug: bool, syslog: bool) -> Result<(), LoggingError> {
@@ -42,26 +45,6 @@ fn init_logging(verbose: bool, debug: bool, syslog: bool) -> Result<(), LoggingE
             init_console_logging(verbose, debug);
             Ok(())
         },
-    }
-}
-
-fn load_publish_loop(file_name: &str, sleep_duration: time::Duration) -> Result<()> {
-    let mut modified_size = ModifiedSize { last_modified: time::UNIX_EPOCH, len: 0 };
-
-    loop {
-        log::debug!("Retrieving metadata for {:?}", file_name);
-        let new_modified_size = get_metadata(file_name)?;
-        //.with_context(|| format!("could not load aliases from {:?}", file_name))?;
-        if new_modified_size != modified_size {
-            let aliases_file = load_aliases(file_name, &new_modified_size)?;
-            //.with_context(|| format!("could not load aliases from {:?}", file_name))?;
-            publish_aliases(&aliases_file, file_name, &new_modified_size)?;
-            //.with_context(|| "could not publish aliases")?;
-            modified_size = new_modified_size;
-        } else {
-            log::debug!("Alias file {:?} has not changed", file_name);
-        }
-        thread::sleep(sleep_duration);
     }
 }
 
@@ -89,18 +72,49 @@ fn load_aliases(
     AliasesFile::from_file(file_name, true)
 }
 
+fn load_publish_loop(
+    avahi: &Avahi, file_name: &str, sleep_duration: time::Duration,
+) -> Result<(), ErrorWrapper> {
+    let mut modified_size = ModifiedSize { last_modified: time::UNIX_EPOCH, len: 0 };
+
+    loop {
+        log::debug!("Retrieving metadata for {:?}", file_name);
+        let new_modified_size = get_metadata(file_name)?;
+        //.with_context(|| format!("could not load aliases from {:?}", file_name))?;
+        if new_modified_size != modified_size {
+            let aliases_file = load_aliases(file_name, &new_modified_size)?;
+            //.with_context(|| format!("could not load aliases from {:?}", file_name))?;
+            publish_aliases(avahi, &aliases_file, file_name, &new_modified_size)?;
+            //.with_context(|| "could not publish aliases")?;
+            modified_size = new_modified_size;
+        } else {
+            log::debug!("Alias file {:?} has not changed", file_name);
+        }
+        thread::sleep(sleep_duration);
+    }
+}
+
 fn publish_aliases<'a>(
-    aliases_file: &AliasesFile, file_name: &'a str, modified_size: &ModifiedSize,
+    avahi: &Avahi, aliases_file: &AliasesFile, file_name: &'a str, modified_size: &ModifiedSize,
 ) -> Result<(), ErrorWrapper> {
     let last_modified: OffsetDateTime = modified_size.last_modified.into();
+    let fqdn = avahi.get_host_name_fqdn()?;
     log::debug!(
-        "Publishing aliases from {:?} (modified {})",
+        r#"Publishing aliases from "{}" for "{}" (modified {})"#,
         file_name,
+        fqdn,
         last_modified.format(&Rfc3339).unwrap()
     );
+    let rdata = Avahi::encode_rdata(&fqdn);
     for alias in aliases_file.all_aliases() {
+        let group = avahi.get_group()?;
         match alias {
-            Ok(a) => log::info!("Publishing alias {}", a),
+            Ok(a) => {
+                log::info!("Publishing alias {}", a);
+                let cname = Avahi::encode_name(a);
+                group.add_record(&cname, &rdata, 60)?;
+                group.commit()?;
+            },
             Err(a) => log::info!(r#"WARNING: invalid alias "{}" ignored"#, a),
         }
     }
@@ -112,10 +126,16 @@ fn publish_aliases<'a>(
     Ok(())
 }
 
-fn signon() {
+fn signon_app() {
     let app = DaemonOpts::clap();
     log::info!("{} {} {}", app.get_name(), clap::crate_version!(), clap::crate_authors!());
 }
 
+fn signon_avahi(avahi: &Avahi) -> Result<(), ErrorWrapper> {
+    let version = avahi.get_version()?;
+    let host_fqdn = avahi.get_host_name_fqdn()?;
+    log::info!("{}, host fqdn: {}", version, host_fqdn);
+    Ok(())
+}
 
 // end
