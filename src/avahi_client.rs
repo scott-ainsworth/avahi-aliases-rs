@@ -139,6 +139,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(target_os = "linux")]
     fn dbus_creation_succeeds() -> Result<(), ErrorWrapper> {
         let avahi_client = AvahiClient::new()?;
         eprintln!("**** avahi_client.get_version() = {}", avahi_client.get_version()?);
