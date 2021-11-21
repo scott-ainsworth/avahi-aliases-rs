@@ -22,12 +22,12 @@ const DBUS_INTERFACE_ENTRY_GROUP: &str = "org.freedesktop.Avahi.EntryGroup";
 
 const DEFAULT_TTL: u64 = 60;
 
-pub struct Avahi {
+pub struct AvahiClient {
     conn: dbus::blocking::Connection,
     ttl: Duration,
 }
 
-impl<'a> Avahi {
+impl<'a> AvahiClient {
     pub fn new() -> Result<Self, ErrorWrapper> {
         Ok(Self {
             conn: dbus::blocking::Connection::new_system()?,
@@ -104,8 +104,10 @@ impl<'a> Avahi {
 pub struct AvahiGroup<'a>(dbus::blocking::Proxy<'a, &'a dbus::blocking::Connection>);
 
 impl<'a> AvahiGroup<'a> {
-    fn new(avahi: &'a Avahi, path: dbus::Path<'a>, ttl: Duration) -> AvahiGroup<'a> {
-        let g = AvahiGroup(avahi.conn.with_proxy(DBUS_NAME, path, ttl));
+    fn new(
+        avahi_client: &'a AvahiClient, path: dbus::Path<'a>, ttl: Duration,
+    ) -> AvahiGroup<'a> {
+        let g = AvahiGroup(avahi_client.conn.with_proxy(DBUS_NAME, path, ttl));
         g
     }
 
@@ -158,17 +160,19 @@ mod test {
 
     #[test]
     fn dbus_creation_succeeds() -> Result<(), ErrorWrapper> {
-        let avahi = Avahi::new()?;
-        // let proxy = avahi.get_proxy();
-        eprintln!("**** avahi.get_version() = {}", avahi.get_version()?);
-        eprintln!("**** avahi.get_host_name_fqdn() = {}", avahi.get_host_name_fqdn()?);
+        let avahi_client = AvahiClient::new()?;
+        eprintln!("**** avahi_client.get_version() = {}", avahi_client.get_version()?);
+        eprintln!(
+            "**** avahi_client.get_host_name_fqdn() = {}",
+            avahi_client.get_host_name_fqdn()?
+        );
         Ok(())
     }
 
     #[test]
     fn resource_records_are_created_correctly() {
         for (alias, resource_record) in TEST_DATA {
-            assert_eq!(*resource_record, Avahi::encode_rdata(alias).as_slice());
+            assert_eq!(*resource_record, AvahiClient::encode_rdata(alias).as_slice());
         }
     }
 }
