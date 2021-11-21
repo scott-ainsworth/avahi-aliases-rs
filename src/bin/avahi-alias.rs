@@ -16,7 +16,9 @@ fn main(opts: CommandOpts) {
     };
     if let Err(error) = result {
         log::error!("Error: {}", error);
+        std::process::exit(1);
     }
+    std::process::exit(0);
 }
 
 fn add(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
