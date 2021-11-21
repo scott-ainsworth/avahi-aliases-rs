@@ -57,6 +57,15 @@ pub enum ErrorWrapper {
         source: io::Error,
     },
 
+    /// Invalid value converting an int to an enum
+    #[error(r#"Invalid {} value: {}."#, enum_name, value)]
+    EnumOutOfRangeError {
+        /// Name of the enum
+        enum_name: String,
+        /// The out-of-range value
+        value: i32,
+    },
+
     // /// An I/O error
     // #[error("could not publish aliases")]
     // PublishError { source: io::Error },
@@ -133,6 +142,16 @@ impl ErrorWrapper {
     where
         F: Into<String>, {
         ErrorWrapper::OpenError { file_name: file_name.into(), source }
+    }
+
+    /// Initialize a new EnumOutOfRangeError
+    ///
+    /// A helper function that copies `enum_name` to a `String`s owned by
+    /// the `EnumOutOfRangeError`.
+    pub fn new_enum_out_of_range_error<N>(enum_name: N, value: i32) -> ErrorWrapper
+    where
+        N: Into<String>, {
+        ErrorWrapper::EnumOutOfRangeError { enum_name: enum_name.into(), value }
     }
 
     /// Initialize a new ReadError

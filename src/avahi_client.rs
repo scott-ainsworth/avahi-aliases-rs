@@ -1,10 +1,18 @@
-//! A lightweight interface to Avahi via DBus
+#![warn(clippy::all)]
+//! An interface to Avahi via D-Bus
 use std::time::Duration;
 
 use crate::ErrorWrapper;
 
+pub mod avahi;
 mod avahi_dbus;
-use avahi_dbus::OrgFreedesktopAvahiServer;
+mod dbus_constants;
+use dbus_constants::*;
+pub use avahi_dbus::OrgFreedesktopAvahiServer;
+mod entry_group;
+pub use entry_group::EntryGroup;
+mod avahi_record;
+pub use avahi_record::AvahiRecord;
 mod interface;
 pub use interface::Interface;
 mod protocol;
@@ -13,15 +21,6 @@ mod record_class;
 pub use record_class::RecordClass;
 mod record_type;
 pub use record_type::RecordType;
-
-/// D-Bus name of the Avahi service
-const DBUS_NAME: &str = "org.freedesktop.Avahi";
-
-/// D-Bus Avahi service path
-const DBUS_PATH_SERVER: &str = "/";
-
-/// D-Bus name of the Avahi Entry Group service
-const DBUS_INTERFACE_ENTRY_GROUP: &str = "org.freedesktop.Avahi.EntryGroup";
 
 const DEFAULT_TTL: Duration = Duration::from_secs(60);
 
@@ -52,10 +51,8 @@ impl<'a> AvahiClient {
             .join(".")
     }
 
-    pub fn get_group(&self) -> Result<AvahiGroup<'_>, ErrorWrapper> {
-        let group_path = self.get_proxy().entry_group_new()?;
-        let g = AvahiGroup::new(self, group_path, DEFAULT_TTL);
-        Ok(g)
+    pub fn new_entry_group(&self) -> Result<EntryGroup<'_>, ErrorWrapper> {
+        Ok(entry_group::new(self, self.get_proxy().entry_group_new()?, DEFAULT_TTL))
     }
 
     pub fn get_host_name_fqdn(&self) -> Result<String, ErrorWrapper> {
@@ -68,47 +65,6 @@ impl<'a> AvahiClient {
 
     fn get_proxy(&'a self) -> dbus::blocking::Proxy<'_, &dbus::blocking::Connection> {
         self.0.with_proxy(DBUS_NAME, DBUS_PATH_SERVER, Duration::from_secs(5))
-    }
-}
-
-// struct AvahiRecord<'a> {
-//     interface: i32,
-//     protocol: i32,
-//     name: &'a str,
-//     class: i32,
-//     record_type: i32,
-//     ttl: u32,
-//     rdata: &'a [u8],
-// }
-
-pub struct AvahiGroup<'a>(dbus::blocking::Proxy<'a, &'a dbus::blocking::Connection>);
-
-impl<'a> AvahiGroup<'a> {
-    fn new(
-        avahi_client: &'a AvahiClient, path: dbus::Path<'a>, ttl: Duration,
-    ) -> AvahiGroup<'a> {
-        let g = AvahiGroup(avahi_client.0.with_proxy(DBUS_NAME, path, ttl));
-        g
-    }
-
-    pub fn add_record(&self, cname: &str, rdata: &[u8], ttl: u32) -> Result<(), ErrorWrapper> {
-        let record = (
-            Interface::Unspecified,
-            Protocol::Unspecified,
-            0u32,
-            cname,
-            RecordClass::In,
-            RecordType::Cname,
-            ttl,
-            rdata,
-        );
-        self.0.method_call(DBUS_INTERFACE_ENTRY_GROUP, "AddRecord", record)?;
-        Ok(())
-    }
-
-    pub fn commit(&self) -> Result<(), ErrorWrapper> {
-        self.0.method_call(DBUS_INTERFACE_ENTRY_GROUP, "Commit", ())?;
-        Ok(())
     }
 }
 
@@ -128,14 +84,13 @@ mod test {
     #[test]
     fn dbus_constants_are_correct() {
         assert_eq!(DBUS_NAME, "org.freedesktop.Avahi");
-        // assert_eq!(DBUS_INTERFACE_SERVER, "org.freedesktop.avahi.server");
         assert_eq!(DBUS_PATH_SERVER, "/");
         assert_eq!(DBUS_INTERFACE_ENTRY_GROUP, "org.freedesktop.Avahi.EntryGroup");
         assert_eq!(Interface::Unspecified as i32, -1);
         assert_eq!(RecordClass::In as u32, 0x01);
         assert_eq!(RecordType::Cname as u32, 0x05);
         assert_eq!(Protocol::Unspecified as i32, -1);
-        assert_eq!(DEFAULT_TTL, 60);
+        assert_eq!(DEFAULT_TTL, Duration::from_secs(60));
     }
 
     #[test]
@@ -147,6 +102,20 @@ mod test {
             "**** avahi_client.get_host_name_fqdn() = {}",
             avahi_client.get_host_name_fqdn()?
         );
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn new_entry_group_succeeds() -> Result<(), ErrorWrapper> {
+        use crate::avahi::EntryGroupState;
+
+        let avahi_client = AvahiClient::new()?;
+        let entry_group = avahi_client.new_entry_group()?;
+        eprintln!("**** entry_group.get_state() = {:?}", entry_group.get_state()?);
+        eprintln!("**** entry_group.is_empty() = {}", entry_group.is_empty()?);
+        assert!(entry_group.is_empty()?);
+        assert_eq!(entry_group.get_state()?, EntryGroupState::Uncommited);
         Ok(())
     }
 

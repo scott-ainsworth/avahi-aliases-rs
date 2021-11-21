@@ -7,8 +7,8 @@ use ::time::OffsetDateTime;
 use structopt::StructOpt;
 use anyhow::Result;
 use avahi_aliases::{
-    init_console_logging, init_syslog_logging, AliasesFile, AvahiClient, DaemonOpts,
-    ErrorWrapper, LoggingError,
+    init_console_logging, init_syslog_logging, AliasesFile, AvahiClient, AvahiRecord,
+    DaemonOpts, ErrorWrapper, LoggingError,
 };
 
 #[derive(PartialEq)]
@@ -108,12 +108,13 @@ fn publish_aliases<'a>(
     );
     let rdata = AvahiClient::encode_rdata(&fqdn);
     for alias in aliases_file.all_aliases() {
-        let group = avahi_client.get_group()?;
+        let group = avahi_client.new_entry_group()?;
         match alias {
             Ok(a) => {
                 log::info!("Publishing alias {}", a);
                 let cname = AvahiClient::encode_name(a);
-                group.add_record(&cname, &rdata, 60)?;
+                let cname_record = AvahiRecord::new_cname(&cname, 60, &rdata);
+                group.add_record(cname_record)?;
                 group.commit()?;
             },
             Err(a) => log::info!(r#"WARNING: invalid alias "{}" ignored"#, a),
