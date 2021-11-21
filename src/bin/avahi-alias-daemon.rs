@@ -107,19 +107,19 @@ fn publish_aliases<'a>(
         last_modified.format(&Rfc3339).unwrap()
     );
     let rdata = AvahiClient::encode_rdata(&fqdn);
+    let group = avahi_client.new_entry_group()?;
     for alias in aliases_file.all_aliases() {
-        let group = avahi_client.new_entry_group()?;
         match alias {
             Ok(a) => {
                 log::info!("Publishing alias {}", a);
                 let cname = AvahiClient::encode_name(a);
                 let cname_record = AvahiRecord::new_cname(&cname, 60, &rdata);
                 group.add_record(cname_record)?;
-                group.commit()?;
             },
             Err(a) => log::info!(r#"WARNING: invalid alias "{}" ignored"#, a),
         }
     }
+    group.commit()?;
     log::info!(
         "Published aliases from {:?} (modified {})",
         file_name,
