@@ -14,25 +14,23 @@ pub use record_class::RecordClass;
 mod record_type;
 pub use record_type::RecordType;
 
+/// D-Bus name of the Avahi service
 const DBUS_NAME: &str = "org.freedesktop.Avahi";
+
+/// D-Bus Avahi service path
 const DBUS_PATH_SERVER: &str = "/";
+
+/// D-Bus name of the Avahi Entry Group service
 const DBUS_INTERFACE_ENTRY_GROUP: &str = "org.freedesktop.Avahi.EntryGroup";
-// const DBUS_INTERFACE_SERVER: &str = "org.freedesktop.Avahi.Server";
 
+const DEFAULT_TTL: Duration = Duration::from_secs(60);
 
-const DEFAULT_TTL: u64 = 60;
-
-pub struct AvahiClient {
-    conn: dbus::blocking::Connection,
-    ttl: Duration,
-}
+/// An Avahi D-Bus client
+pub struct AvahiClient(dbus::blocking::Connection);
 
 impl<'a> AvahiClient {
     pub fn new() -> Result<Self, ErrorWrapper> {
-        Ok(Self {
-            conn: dbus::blocking::Connection::new_system()?,
-            ttl: Duration::from_secs(DEFAULT_TTL),
-        })
+        Ok(Self(dbus::blocking::Connection::new_system()?))
     }
 
     pub fn encode_rdata(name: &str) -> Vec<u8> {
@@ -56,7 +54,7 @@ impl<'a> AvahiClient {
 
     pub fn get_group(&self) -> Result<AvahiGroup<'_>, ErrorWrapper> {
         let group_path = self.get_proxy().entry_group_new()?;
-        let g = AvahiGroup::new(self, group_path, self.ttl);
+        let g = AvahiGroup::new(self, group_path, DEFAULT_TTL);
         Ok(g)
     }
 
@@ -69,26 +67,8 @@ impl<'a> AvahiClient {
     }
 
     fn get_proxy(&'a self) -> dbus::blocking::Proxy<'_, &dbus::blocking::Connection> {
-        self.conn.with_proxy(DBUS_NAME, DBUS_PATH_SERVER, Duration::from_secs(5))
+        self.0.with_proxy(DBUS_NAME, DBUS_PATH_SERVER, Duration::from_secs(5))
     }
-
-    // pub fn add_record(&self, cname: &str, rdata: &[u8], ttl: u32) -> Result<(), ErrorWrapper>
-    // {     let group = self.get_group()?;
-    //     let record = AvahiRecord {
-    //         interface: UNSPECIFIED_INTERFACE,
-    //         protocol: PROTO_UNSPEC,
-    //         res0: 0,
-    //         name: cname,
-    //         class: CLASS_IN,
-    //         record_type: TYPE_CNAME,
-    //         ttl: ttl,
-    //         rdata: rdata,
-    //     };
-    //     let result = group.add_record(record)?;
-    //     Ok(())
-    // }
-
-    // pub fn publish_alias(&self, alias: &Alias) -> Result<(), ErrorWrapper> {}
 }
 
 // struct AvahiRecord<'a> {
@@ -107,7 +87,7 @@ impl<'a> AvahiGroup<'a> {
     fn new(
         avahi_client: &'a AvahiClient, path: dbus::Path<'a>, ttl: Duration,
     ) -> AvahiGroup<'a> {
-        let g = AvahiGroup(avahi_client.conn.with_proxy(DBUS_NAME, path, ttl));
+        let g = AvahiGroup(avahi_client.0.with_proxy(DBUS_NAME, path, ttl));
         g
     }
 
