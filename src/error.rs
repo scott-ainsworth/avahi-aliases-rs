@@ -9,9 +9,16 @@ use std::io;
 
 use thiserror::Error;
 
+use crate::LoggingError;
+
 /// An enum to consolidate all errors passed to user-aware and logging code.
 #[derive(Error, Debug)]
 pub enum ErrorWrapper {
+    /// An error setting up or using debug
+    //#[error(r#"D-Bus failure: {message}"#)]
+    #[error(r#"D-Bus failure: {message}"#)]
+    DBusError { message: String },
+
     /// An invalid alias
     #[error(r#"invalid alias: "{alias}""#)]
     InvalidAliasError {
@@ -27,6 +34,10 @@ pub enum ErrorWrapper {
         /// The invalid alias the caused the error
         alias: String,
     },
+
+    /// A logging error has occured
+    #[error(r#"logging error"#)]
+    LoggingError,
 
     /// An I/O error retrieving the aliases file metadata
     #[error(r#"could not get metadata for "{file_name}": {source}."#)]
@@ -44,6 +55,15 @@ pub enum ErrorWrapper {
         file_name: String,
         /// The source `io::Error`
         source: io::Error,
+    },
+
+    /// Invalid value converting an int to an enum
+    #[error(r#"Invalid {} value: {}."#, enum_name, value)]
+    EnumOutOfRangeError {
+        /// Name of the enum
+        enum_name: String,
+        /// The out-of-range value
+        value: i32,
     },
 
     // /// An I/O error
@@ -66,6 +86,20 @@ pub enum ErrorWrapper {
         /// The source `io::Error`
         source: io::Error,
     },
+}
+
+/// Convert a `LoggingError` into an `ErrorWrapper`.
+impl From<LoggingError> for ErrorWrapper {
+    fn from(_: LoggingError) -> ErrorWrapper { ErrorWrapper::LoggingError }
+}
+
+/// Convert a `dbus::Error` into an `ErrorWrapper`.
+impl From<dbus::Error> for ErrorWrapper {
+    fn from(error: dbus::Error) -> ErrorWrapper {
+        ErrorWrapper::DBusError {
+            message: error.message().unwrap_or("Unknown error").to_owned(),
+        }
+    }
 }
 
 impl ErrorWrapper {
@@ -108,6 +142,16 @@ impl ErrorWrapper {
     where
         F: Into<String>, {
         ErrorWrapper::OpenError { file_name: file_name.into(), source }
+    }
+
+    /// Initialize a new EnumOutOfRangeError
+    ///
+    /// A helper function that copies `enum_name` to a `String`s owned by
+    /// the `EnumOutOfRangeError`.
+    pub fn new_enum_out_of_range_error<N>(enum_name: N, value: i32) -> ErrorWrapper
+    where
+        N: Into<String>, {
+        ErrorWrapper::EnumOutOfRangeError { enum_name: enum_name.into(), value }
     }
 
     /// Initialize a new ReadError
