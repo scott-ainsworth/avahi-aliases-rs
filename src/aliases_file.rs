@@ -30,6 +30,9 @@ impl<'a> AliasesFile {
         self.lines.iter().filter_map(|line| line.alias().map(|a| a.err()).flatten()).collect()
     }
 
+    /// Return the number of aliases
+    pub fn alias_count(&self) -> usize { self.aliases().len() }
+
     pub fn from_file(filename: &str, allow_invalid: bool) -> Result<Self, ErrorWrapper> {
         let mut file = fs::OpenOptions::new()
             .read(true)
@@ -121,6 +124,17 @@ mod tests {
             for i in 0..n {
                 assert_eq!(aliases_file.lines()[i].text(), format!("a{}.local", i));
             }
+        }
+    }
+
+    /// Ensure the alias count is correct.
+    #[test]
+    fn alias_count_returns_correct_count() {
+        for n in 0..5 {
+            let test_file = TestFile::new("data/test-avahi-aliases-count.txt", n, &[]);
+            let aliases_file = AliasesFile::from_file(test_file.file_name, false).unwrap();
+            assert_eq!(aliases_file.lines().len(), n);
+            assert_eq!(aliases_file.alias_count(), n);
         }
     }
 
