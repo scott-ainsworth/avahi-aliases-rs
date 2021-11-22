@@ -78,17 +78,15 @@ fn load_publish_loop(
     let mut modified_size = ModifiedSize { last_modified: time::UNIX_EPOCH, len: 0 };
 
     loop {
-        log::debug!("Retrieving metadata for {:?}", file_name);
+        log::debug!(r#"Retrieving metadata for "{}""#, file_name);
         let new_modified_size = get_metadata(file_name)?;
-        //.with_context(|| format!("could not load aliases from {:?}", file_name))?;
         if new_modified_size != modified_size {
             let aliases_file = load_aliases(file_name, &new_modified_size)?;
-            //.with_context(|| format!("could not load aliases from {:?}", file_name))?;
+            log::info!(r#"Loaded {} aliases from "{}""#, aliases_file.alias_count(), file_name,);
             publish_aliases(avahi_client, &aliases_file, file_name, &new_modified_size)?;
-            //.with_context(|| "could not publish aliases")?;
             modified_size = new_modified_size;
         } else {
-            log::debug!("Alias file {:?} has not changed", file_name);
+            log::debug!(r#"Alias file "{}" has not changed"#, file_name);
         }
         thread::sleep(sleep_duration);
     }
@@ -99,13 +97,18 @@ fn publish_aliases<'a>(
     modified_size: &ModifiedSize,
 ) -> Result<(), ErrorWrapper> {
     let last_modified: OffsetDateTime = modified_size.last_modified.into();
+    if aliases_file.alias_count() == 0 {
+        log::warn!(
+            r#"No aliases in "{}" (modified {})"#,
+            file_name,
+            last_modified.format(&Rfc3339).unwrap()
+        );
+        return Ok(());
+    }
+
     let fqdn = avahi_client.get_host_name_fqdn()?;
-    log::debug!(
-        r#"Publishing aliases from "{}" for "{}" (modified {})"#,
-        file_name,
-        fqdn,
-        last_modified.format(&Rfc3339).unwrap()
-    );
+    log::debug!(r#"Publishing aliases from "{}" for "{}""#, file_name, fqdn,);
+
     let rdata = AvahiClient::encode_rdata(&fqdn);
     let group = avahi_client.new_entry_group()?;
     for alias in aliases_file.all_aliases() {
@@ -121,7 +124,8 @@ fn publish_aliases<'a>(
     }
     group.commit()?;
     log::info!(
-        "Published aliases from {:?} (modified {})",
+        "Published {} aliases from {:?} (modified {})",
+        aliases_file.alias_count(),
         file_name,
         last_modified.format(&Rfc3339).unwrap()
     );
