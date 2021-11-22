@@ -1,0 +1,75 @@
+#!/bin/bash
+##
+# Install the executables and systemd unit
+##
+
+set -o errexit -o nounset
+
+if [ `id -u` -ne 0 ]; then
+    echo 'Must run as root (or sudo)'
+    exit 1
+fi
+
+## Sanity checks
+
+if [ ! -d '/etc/avahi' ]; then
+    echo 'The /etc/avahi directory does not exist (is Avahi installed?)'
+    exit 1
+fi
+
+if ! getent passwd 'avahi' >/dev/null; then
+    echo 'The avahi user does not exist (is Avahi installed?)'
+    exit 1
+fi
+
+if [ ! -x target/release/avahi-alias ]; then
+    echo 'target/release/avahi-alias is missing (did the build fail?)'
+    exit 1
+fi
+
+if [ ! -x target/release/avahi-alias-daemon ]; then
+    echo 'target/release/avahi-alias-daemon is missing (did the build fail?)'
+    exit 1
+fi
+
+## Create /etc/avahi/avahi-aliases if it does not exist
+
+if [ ! -f '/etc/avahi/avahi-aliases' ]; then
+    echo 'Install /etc/avahi/avahi-aliases'
+    cp -v etc/avahi-aliases /etc/avahi
+    chown root:root /etc/avahi/avahi-aliases
+    chmod 0755 /etc/avahi/avahi-aliases
+else
+    echo '/etc/avahi/avahi-aliases already exists. Skipping installation.'
+fi
+
+## Copy binaries
+
+echo 'Install binaries'
+cp -v target/release/avahi-alias /usr/local/bin/
+chown root:root /usr/local/bin/avahi-alias
+chmod 0755 /usr/local/bin/avahi-alias
+cp -v target/release/avahi-alias-daemon /usr/local/sbin/
+chown root:root /usr/local/sbin/avahi-alias-daemon
+chmod 0755 /usr/local/sbin/avahi-alias-daemon
+
+## Install and start the systemd service
+
+echo 'Install systemd service (avahi-aliases)'
+cp -v etc/avahi-aliases.service /etc/systemd/system/
+chown root:root /etc/systemd/system/avahi-aliases.service
+chmod 0755 /etc/systemd/system/avahi-aliases.service
+echo 'Enable the avahi-aliases service'
+systemctl daemon-reload
+systemctl enable avahi-aliases.service
+echo 'Start the avahi-aliases service'
+systemctl start avahi-aliases.service
+systemctl status avahi-aliases.service
+
+## Wrap up
+echo 'Installation complete.'
+echo 'Use sudo avahi-alias to manage aliases'
+echo 'Use sudo systemctl <start|stop|status> avahi-aliases to control the service'
+echo ''
+
+# end
