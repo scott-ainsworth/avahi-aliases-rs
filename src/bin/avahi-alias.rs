@@ -37,6 +37,10 @@ fn add(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
 
 fn list(filename: &str) -> Result<(), ErrorWrapper> {
     let aliases_file = AliasesFile::from_file(filename, true)?;
+    if aliases_file.alias_count() == 0 {
+        log::warn!(r#"No aliases in "{}""#, filename);
+        return Ok(());
+    }
     for alias in aliases_file.all_aliases() {
         match alias {
             Ok(alias) => println!("{}", alias),
