@@ -34,7 +34,7 @@ fn exec(opts: DaemonOpts) -> Result<(), ErrorWrapper> {
     let file_name = opts.common.file.as_str();
     let avahi_client = AvahiClient::new()?;
     signon_avahi(&avahi_client)?;
-    load_publish_loop(&avahi_client, file_name, time::Duration::from_secs(5))?;
+    load_publish_loop(&avahi_client, file_name, time::Duration::new(opts.polling_interval, 0))?;
     Ok(())
 }
 
@@ -73,7 +73,7 @@ fn load_aliases(
 }
 
 fn load_publish_loop(
-    avahi_client: &AvahiClient, file_name: &str, sleep_duration: time::Duration,
+    avahi_client: &AvahiClient, file_name: &str, polling_interval: time::Duration,
 ) -> Result<(), ErrorWrapper> {
     let mut modified_size = ModifiedSize { last_modified: time::UNIX_EPOCH, len: 0 };
 
@@ -88,7 +88,7 @@ fn load_publish_loop(
         } else {
             log::debug!(r#"Alias file "{}" has not changed"#, file_name);
         }
-        thread::sleep(sleep_duration);
+        thread::sleep(polling_interval);
     }
 }
 
