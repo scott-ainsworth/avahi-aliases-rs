@@ -20,6 +20,10 @@ pub struct DaemonOpts {
     #[structopt(flatten)]
     pub common: CommonOpts,
 
+    /// Change detection polling interval
+    #[structopt(short = "p", long = "poll", default_value = "30")]
+    pub polling_interval: u64,
+
     /// Log to syslog (vice console)
     #[structopt(short, long)]
     pub syslog: bool,
