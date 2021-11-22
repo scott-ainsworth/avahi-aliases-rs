@@ -1,0 +1,40 @@
+#!/bin/bash
+##
+# Install the executables and systemd unit
+##
+
+set -o errexit -o nounset
+
+if [ `id -u` -ne 0 ]; then
+    echo 'Must run as root (or sudo)'
+    exit 1
+fi
+
+## Install and start the systemd service
+
+echo 'Stop the avahi-aliases service'
+systemctl is-active --quiet avahi-aliases.service \
+    && systemctl stop avahi-aliases.service
+echo 'Disable the avahi-aliases service'
+systemctl is-enabled --quiet avahi-aliases.service \
+    && systemctl disable avahi-aliases.service \
+    && systemctl daemon-reload
+echo 'Uninstall systemd service (avahi-aliases)'
+rm -f /etc/systemd/system/avahi-aliases.service
+
+## Uninstall binaries
+
+echo 'Uninstall binaries'
+rm -f /usr/local/bin/avahi-alias
+rm -f /usr/local/sbin/avahi-alias-daemon
+
+## Leave /etc/avahi/avahi-aliases alone
+
+[ -f '/etc/avahi/avahi-aliases' ] \
+    && echo 'Leaving /etc/avahi/avahi-aliases in place in case there are user changes'
+
+## Wrap up
+echo 'Removal complete.'
+echo ''
+
+# end

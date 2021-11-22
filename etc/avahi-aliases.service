@@ -1,0 +1,11 @@
+[Unit]
+Description=Avahi Aliases
+Wants=avahi-daemon.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/avahi-alias-daemon --syslog --verbose
+User=avahi
+
+[Install]
+WantedBy=multi-user.target

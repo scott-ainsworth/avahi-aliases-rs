@@ -1,0 +1,22 @@
+##
+# Sample /etc/avahi/avahi-aliases file
+#
+# This files is used to store the aliases (CNAMEs) published by
+# avahi-alias-daemon. Update using your favorite text editor or
+# using the avahi-alias program.
+#
+# Format:
+#   - Aliases are stored one per line.
+#   - All aliases must end in ".local".
+#   - Everything after the first pound sign (#) is a comment and ignored.
+#   - Leading and trailing whitespace is ignored.
+#   - Blank lines are ignored.
+#   - All CNAMEs are aliases for the primary name only.
+#     (The primary hostname is logged.)
+#   - Valid aliases start and end with a letter or digit, can include embedded
+#     hyphens and must be in the ".local" domain.
+#
+# Examples:
+#    sample.local     # This a valid alias
+#    media-center.local
+##
