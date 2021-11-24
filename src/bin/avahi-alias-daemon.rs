@@ -8,7 +8,7 @@ use structopt::StructOpt;
 use anyhow::Result;
 use avahi_aliases::{
     init_console_logging, init_syslog_logging, AliasesFile, AvahiClient, AvahiRecord,
-    DaemonOpts, ErrorWrapper, LoggingError,
+    DaemonOpts, ErrorWrapper,
 };
 
 #[derive(PartialEq)]
@@ -19,7 +19,7 @@ struct ModifiedSize {
 
 #[paw::main]
 fn main(opts: DaemonOpts) {
-    match exec(opts) {
+    match inner_main(opts) {
         Ok(_) => std::process::exit(0),
         Err(error) => {
             log::error!("Error: {}", error);
@@ -28,7 +28,7 @@ fn main(opts: DaemonOpts) {
     }
 }
 
-fn exec(opts: DaemonOpts) -> Result<(), ErrorWrapper> {
+fn inner_main(opts: DaemonOpts) -> Result<(), ErrorWrapper> {
     init_logging(opts.common.verbose, opts.common.debug, opts.syslog)?;
     signon_app();
     let file_name = opts.common.file.as_str();
@@ -38,11 +38,11 @@ fn exec(opts: DaemonOpts) -> Result<(), ErrorWrapper> {
     Ok(())
 }
 
-fn init_logging(verbose: bool, debug: bool, syslog: bool) -> Result<(), LoggingError> {
+fn init_logging(verbose: bool, debug: bool, syslog: bool) -> Result<(), ErrorWrapper> {
     match syslog {
         true => init_syslog_logging(verbose, debug),
         false => {
-            init_console_logging(verbose, debug);
+            init_console_logging(verbose, debug)?;
             Ok(())
         },
     }

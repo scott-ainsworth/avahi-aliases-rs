@@ -9,8 +9,6 @@ use std::io;
 
 use thiserror::Error;
 
-use crate::LoggingError;
-
 /// An enum to consolidate all errors passed to user-aware and logging code.
 #[derive(Error, Debug)]
 pub enum ErrorWrapper {
@@ -88,9 +86,14 @@ pub enum ErrorWrapper {
     },
 }
 
-/// Convert a `LoggingError` into an `ErrorWrapper`.
-impl From<LoggingError> for ErrorWrapper {
-    fn from(_: LoggingError) -> ErrorWrapper { ErrorWrapper::LoggingError }
+/// Convert a `SetLoggerError` into an `ErrorWrapper`.
+impl From<log::SetLoggerError> for ErrorWrapper {
+    fn from(_: log::SetLoggerError) -> ErrorWrapper { ErrorWrapper::LoggingError }
+}
+
+/// Convert a `SetLoggerError` into an `ErrorWrapper`.
+impl From<syslog::Error> for ErrorWrapper {
+    fn from(_: syslog::Error) -> ErrorWrapper { ErrorWrapper::LoggingError }
 }
 
 /// Convert a `dbus::Error` into an `ErrorWrapper`.
@@ -172,5 +175,304 @@ impl ErrorWrapper {
     where
         F: Into<String>, {
         ErrorWrapper::WriteError { file_name: file_name.into(), source }
+    }
+}
+
+//**********************************************************************************************
+// Unit tests
+//**********************************************************************************************
+
+#[cfg(test)]
+mod test {
+    use ErrorWrapper::*;
+
+    use super::*;
+
+    type R = Result<(), ErrorWrapper>;
+
+    static ALIAS: &str = "a0.local";
+    static ENUM_NAME: &str = "Enum";
+    static FILENAME: &str = "avahi-aliases";
+    static MESSAGE: &str = "message";
+
+    //******************************************************************************************
+    // ErrorWrapper::DBusError
+
+    #[test]
+    fn dbus_error_creation_works() {
+        if let Err(error) = Err(DBusError { message: MESSAGE.to_owned() }) as R {
+            let _ = format!("{}", error);
+        }
+    }
+
+    #[test]
+    fn from_dbus_error_creates_error_wrapper() {
+        let dbus_error = dbus::Error::new_failed(MESSAGE);
+        let _: ErrorWrapper = dbus_error.into();
+    }
+
+    #[test]
+    fn dbus_error_produces_correct_message() {
+        if let Err(error) = Err(DBusError { message: MESSAGE.to_owned() }) as R {
+            assert_eq!(format!("{}", error), format!(r#"D-Bus failure: {}"#, MESSAGE))
+        }
+    }
+
+    //******************************************************************************************
+    // ErrorWrapper::InvalidAliasError
+
+    #[test]
+    fn invalid_alias_error_creation_works() {
+        if let Err(error) = Err(InvalidAliasError { alias: ALIAS.to_owned() }) as R {
+            let _ = format!("{}", error);
+        }
+    }
+
+    #[test]
+    fn new_invalid_alias_error_creation_works() {
+        let _ = ErrorWrapper::new_invalid_alias_error(ALIAS);
+    }
+
+    #[test]
+    fn invalid_alias_error_produces_correct_message() {
+        if let Err(error) = Err(InvalidAliasError { alias: ALIAS.to_owned() }) as R {
+            assert_eq!(format!("{}", error), format!(r#"invalid alias: "{}""#, ALIAS))
+        }
+    }
+
+    //******************************************************************************************
+    // ErrorWrapper::InvalidAliasFileError
+
+    #[test]
+    fn invalid_alias_file_error_creation_works() {
+        if let Err(error) = Err(InvalidAliasFileError {
+            file_name: FILENAME.to_owned(),
+            alias: ALIAS.to_owned(),
+        }) as R
+        {
+            let _ = format!("{}", error);
+        }
+    }
+
+    #[test]
+    fn new_invalid_alias_file_error_creation_works() {
+        let _ = ErrorWrapper::new_invalid_alias_file_error(FILENAME, ALIAS);
+    }
+
+    #[test]
+    fn invalid_alias_file_error_produces_correct_message() {
+        if let Err(error) = Err(InvalidAliasFileError {
+            file_name: FILENAME.to_owned(),
+            alias: ALIAS.to_owned(),
+        }) as R
+        {
+            assert_eq!(
+                format!("{}", error),
+                format!(r#"invalid alias "{}" found in "{}""#, ALIAS, FILENAME)
+            )
+        }
+    }
+
+    //***************************************************************************************
+    // ErrorWrapper::LoggingError
+
+    #[test]
+    fn logging_error_creation_works() {
+        if let Err(error) = Err(LoggingError) as R {
+            let _ = format!("{}", error);
+        }
+    }
+
+    #[test]
+    fn logging_error_produces_correct_message() {
+        if let Err(error) = Err(LoggingError) as R {
+            assert_eq!(format!("{}", error), r#"logging error"#)
+        }
+    }
+
+    //***************************************************************************************
+    // ErrorWrapper::MetadataError
+
+    #[test]
+    fn metadata_error_creation_works() {
+        if let Err(error) = Err(MetadataError {
+            file_name: FILENAME.to_owned(),
+            source: io::Error::new(io::ErrorKind::AddrInUse, MESSAGE),
+        }) as R
+        {
+            let _ = format!("{}", error);
+        }
+    }
+
+    #[test]
+    fn new_metadata_error_creation_works() {
+        let _ = ErrorWrapper::new_metadata_error(
+            FILENAME,
+            io::Error::new(io::ErrorKind::AddrInUse, MESSAGE),
+        );
+    }
+
+    #[test]
+    fn metadata_error_produces_correct_message() {
+        if let Err(error) = Err(MetadataError {
+            file_name: FILENAME.to_owned(),
+            source: io::Error::new(io::ErrorKind::AddrInUse, MESSAGE),
+        }) as R
+        {
+            assert_eq!(
+                format!("{}", error),
+                format!(
+                    r#"could not get metadata for "{}": {}."#,
+                    FILENAME,
+                    io::Error::new(io::ErrorKind::AddrInUse, MESSAGE)
+                )
+            )
+        }
+    }
+
+    //***************************************************************************************
+    // ErrorWrapper::OpenError
+
+    #[test]
+    fn open_error_creation_works() {
+        if let Err(error) = Err(OpenError {
+            file_name: FILENAME.to_owned(),
+            source: io::Error::new(io::ErrorKind::AddrInUse, MESSAGE),
+        }) as R
+        {
+            let _ = format!("{}", error);
+        }
+    }
+
+    #[test]
+    fn new_open_error_creation_works() {
+        let _ = ErrorWrapper::new_open_error(
+            FILENAME,
+            io::Error::new(io::ErrorKind::AddrInUse, MESSAGE),
+        );
+    }
+
+    #[test]
+    fn open_error_produces_correct_message() {
+        if let Err(error) = Err(OpenError {
+            file_name: FILENAME.to_owned(),
+            source: io::Error::new(io::ErrorKind::AddrInUse, MESSAGE),
+        }) as R
+        {
+            assert_eq!(
+                format!("{}", error),
+                format!(
+                    r#"could not open "{}": {}."#,
+                    FILENAME,
+                    io::Error::new(io::ErrorKind::AddrInUse, MESSAGE)
+                )
+            )
+        }
+    }
+
+    //***************************************************************************************
+    // ErrorWrapper::EnumOutOfRangeError
+
+    #[test]
+    fn enum_out_of_range_error_creation_works() {
+        if let Err(error) =
+            Err(EnumOutOfRangeError { enum_name: ENUM_NAME.to_owned(), value: 0 }) as R
+        {
+            let _ = format!("{}", error);
+        }
+    }
+
+    #[test]
+    fn new_enum_out_of_range_error_creation_works() {
+        let _ = ErrorWrapper::new_enum_out_of_range_error(ENUM_NAME, 0);
+    }
+
+    #[test]
+    fn enum_out_of_range_error_produces_correct_message() {
+        if let Err(error) =
+            Err(EnumOutOfRangeError { enum_name: ENUM_NAME.to_owned(), value: 0 }) as R
+        {
+            assert_eq!(format!("{}", error), format!(r#"Invalid {} value: {}."#, ENUM_NAME, 0))
+        }
+    }
+
+    //***************************************************************************************
+    // ErrorWrapper::ReadError
+
+    #[test]
+    fn read_error_creation_works() {
+        if let Err(error) = Err(ReadError {
+            file_name: FILENAME.to_owned(),
+            source: io::Error::new(io::ErrorKind::AddrInUse, MESSAGE),
+        }) as R
+        {
+            let _ = format!("{}", error);
+        }
+    }
+
+    #[test]
+    fn new_read_error_creation_works() {
+        let _ = ErrorWrapper::new_read_error(
+            FILENAME,
+            io::Error::new(io::ErrorKind::AddrInUse, MESSAGE),
+        );
+    }
+
+    #[test]
+    fn read_error_produces_correct_message() {
+        if let Err(error) = Err(ReadError {
+            file_name: FILENAME.to_owned(),
+            source: io::Error::new(io::ErrorKind::AddrInUse, MESSAGE),
+        }) as R
+        {
+            assert_eq!(
+                format!("{}", error),
+                format!(
+                    r#"could not read "{}": {}."#,
+                    FILENAME,
+                    io::Error::new(io::ErrorKind::AddrInUse, MESSAGE)
+                )
+            )
+        }
+    }
+
+    //***************************************************************************************
+    // ErrorWrapper::WriteError
+
+    #[test]
+    fn write_error_creation_works() {
+        if let Err(error) = Err(WriteError {
+            file_name: FILENAME.to_owned(),
+            source: io::Error::new(io::ErrorKind::AddrInUse, MESSAGE),
+        }) as R
+        {
+            let _ = format!("{}", error);
+        }
+    }
+
+    #[test]
+    fn new_write_error_creation_works() {
+        let _ = ErrorWrapper::new_write_error(
+            FILENAME,
+            io::Error::new(io::ErrorKind::AddrInUse, MESSAGE),
+        );
+    }
+
+    #[test]
+    fn write_error_produces_correct_message() {
+        if let Err(error) = Err(WriteError {
+            file_name: FILENAME.to_owned(),
+            source: io::Error::new(io::ErrorKind::AddrInUse, MESSAGE),
+        }) as R
+        {
+            assert_eq!(
+                format!("{}", error),
+                format!(
+                    r#"could not write "{}": {}."#,
+                    FILENAME,
+                    io::Error::new(io::ErrorKind::AddrInUse, MESSAGE)
+                )
+            )
+        }
     }
 }
