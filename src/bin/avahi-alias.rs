@@ -8,17 +8,20 @@ use avahi_aliases::{
 
 #[paw::main]
 fn main(opts: CommandOpts) {
-    init_console_logging(opts.common.verbose, opts.common.debug);
-    let result = match opts.cmd {
-        Command::Add { aliases } => add(&opts.common.file, &aliases),
-        Command::List {} => list(&opts.common.file),
-        Command::Remove { aliases, force } => remove(&opts.common.file, &aliases, force),
-    };
-    if let Err(error) = result {
+    if let Err(error) = inner_main(opts) {
         log::error!("Error: {}", error);
         std::process::exit(1);
     }
     std::process::exit(0);
+}
+
+fn inner_main(opts: CommandOpts) -> Result<(), ErrorWrapper> {
+    init_console_logging(opts.common.verbose, opts.common.debug)?;
+    match opts.cmd {
+        Command::Add { aliases } => add(&opts.common.file, &aliases),
+        Command::List {} => list(&opts.common.file),
+        Command::Remove { aliases, force } => remove(&opts.common.file, &aliases, force),
+    }
 }
 
 fn add(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
