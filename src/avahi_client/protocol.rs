@@ -22,7 +22,7 @@ super::enums::dbus_arg_iter_append!(Protocol);
 //**********************************************************************************************
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     static TEST_DATA: &[(Protocol, i32)] =

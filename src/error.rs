@@ -183,7 +183,7 @@ impl ErrorWrapper {
 //**********************************************************************************************
 
 #[cfg(test)]
-mod test {
+mod tests {
     use ErrorWrapper::*;
 
     use super::*;

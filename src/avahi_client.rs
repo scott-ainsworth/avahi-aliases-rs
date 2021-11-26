@@ -71,7 +71,7 @@ fn to_ascii(idna_name: &str) -> String { idna_name.to_owned() }
 //**********************************************************************************************
 
 #[cfg(test)]
-mod test {
+mod tests {
 
     use super::*;
 

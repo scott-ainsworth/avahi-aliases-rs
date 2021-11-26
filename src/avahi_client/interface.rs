@@ -15,7 +15,7 @@ super::enums::dbus_arg_iter_append!(Interface);
 //**********************************************************************************************
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     static TEST_DATA: &[(Interface, i32)] = &[(Interface::Unspecified, -1)];

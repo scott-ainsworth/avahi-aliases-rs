@@ -15,7 +15,7 @@ pub const DBUS_INTERFACE_ENTRY_GROUP: &str = "org.freedesktop.Avahi.EntryGroup";
 //**********************************************************************************************
 
 #[cfg(test)]
-mod test {
+mod tests {
 
     use super::*;
 

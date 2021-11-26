@@ -42,7 +42,7 @@ super::enums::dbus_arg_iter_append!(RecordType);
 //**********************************************************************************************
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     static TEST_DATA: &[(RecordType, u16)] = &[

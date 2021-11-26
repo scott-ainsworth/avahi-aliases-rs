@@ -15,7 +15,7 @@ super::enums::dbus_arg_iter_append!(RecordClass);
 //**********************************************************************************************
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     static TEST_DATA: &[(RecordClass, u16)] = &[(RecordClass::In, 1)];

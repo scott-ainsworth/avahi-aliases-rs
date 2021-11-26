@@ -79,7 +79,7 @@ pub enum Command {
 //**********************************************************************************************
 
 #[cfg(test)]
-mod test {
+mod tests {
     use structopt::{self, StructOpt};
 
     use super::*;
