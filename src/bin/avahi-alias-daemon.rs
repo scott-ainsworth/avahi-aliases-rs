@@ -82,7 +82,7 @@ fn load_publish_loop(
         let new_modified_size = get_metadata(file_name)?;
         if new_modified_size != modified_size {
             let aliases_file = load_aliases(file_name, &new_modified_size)?;
-            log::info!(r#"Loaded {} aliases from "{}""#, aliases_file.alias_count(), file_name,);
+            log::info!(r#"Loaded {} aliases from "{}""#, aliases_file.alias_count(), file_name);
             publish_aliases(avahi_client, &aliases_file, file_name, &new_modified_size)?;
             modified_size = new_modified_size;
         } else {
@@ -113,10 +113,9 @@ fn publish_aliases<'a>(
     let group = avahi_client.new_entry_group()?;
     for alias in aliases_file.all_aliases() {
         match alias {
-            Ok(a) => {
-                log::info!("Publishing alias {}", a);
-                let cname = AvahiClient::encode_name(a);
-                let cname_record = AvahiRecord::new_cname(&cname, 60, &rdata);
+            Ok(alias) => {
+                log::info!("Publishing alias {}", alias);
+                let cname_record = AvahiRecord::new_cname(alias, 60, &rdata);
                 group.add_record(cname_record)?;
             },
             Err(a) => log::info!(r#"WARNING: invalid alias "{}" ignored"#, a),

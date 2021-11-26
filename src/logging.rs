@@ -71,9 +71,10 @@ mod tests {
 
     #[test]
     fn init_console_logging_works() {
-        init_console_logging(true, false).unwrap_or_else(|error| {
-            eprintln!(r#"Could completely test "init_console_logging": {:?}"#, error);
-        });
+        // There is a good chance that logging is already initialized by the testing
+        // system; thus, an Err(...) result is ignored.
+        // The result is less than perfect testing--c'est la guerre!
+        let _ = init_console_logging(true, false);
     }
 
     #[test]

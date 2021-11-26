@@ -1,5 +1,6 @@
+//! As client interface to Avahi via D-Bus
+
 #![warn(clippy::all)]
-//! An interface to Avahi via D-Bus
 use std::time::Duration;
 
 use crate::ErrorWrapper;
@@ -21,6 +22,7 @@ mod record_class;
 pub use record_class::RecordClass;
 mod record_type;
 pub use record_type::RecordType;
+mod enums;
 
 const DEFAULT_TTL: Duration = Duration::from_secs(60);
 
@@ -33,22 +35,15 @@ impl<'a> AvahiClient {
     }
 
     pub fn encode_rdata(name: &str) -> Vec<u8> {
-        // TODO: convert encode_rdata to functional style
-        let mut rdata: Vec<u8> = Vec::<u8>::new();
+        // TODO: fix capacity to account for IDNA
+        let mut rdata: Vec<u8> = Vec::<u8>::with_capacity(name.len() + 1);
         for part in name.split('.').filter(|p| !p.is_empty()) {
-            rdata.extend([part.len().to_be_bytes().last().unwrap()]);
-            rdata.extend(to_ascii(part).as_bytes());
+            let encoded_part = to_ascii(part);
+            rdata.push(part.len() as u8);
+            rdata.extend(encoded_part.as_bytes());
         }
-        rdata.extend(&[0u8]);
+        rdata.push(0u8);
         rdata
-    }
-
-    pub fn encode_name(name: &str) -> String {
-        name.split('.')
-            .filter(|p| !p.is_empty())
-            .map(to_ascii)
-            .collect::<Vec<String>>()
-            .join(".")
     }
 
     pub fn new_entry_group(&self) -> Result<EntryGroup<'_>, ErrorWrapper> {
@@ -71,14 +66,21 @@ impl<'a> AvahiClient {
 /// Convert IDNA domains to ASCII (currently a no-op/passthrough)
 fn to_ascii(idna_name: &str) -> String { idna_name.to_owned() }
 
+//**********************************************************************************************
+// unit tests
+//**********************************************************************************************
+
 #[cfg(test)]
-mod test {
+mod tests {
 
     use super::*;
 
-    static TEST_DATA: &[(&str, &[u8])] = &[
+    static TEST_RDATA: &[(&str, &[u8])] = &[
+        ("a.local", &[1, b'a', 5, b'l', b'o', b'c', b'a', b'l', 0]),
         ("a0.local", &[2, b'a', b'0', 5, b'l', b'o', b'c', b'a', b'l', 0]),
         ("xyzzy.local", &[5, b'x', b'y', b'z', b'z', b'y', 5, b'l', b'o', b'c', b'a', b'l', 0]),
+        ("a.z.local", &[1, b'a', 1, b'z', 5, b'l', b'o', b'c', b'a', b'l', 0]),
+        ("a..local", &[1, b'a', 5, b'l', b'o', b'c', b'a', b'l', 0]),
     ];
 
     #[test]
@@ -94,14 +96,18 @@ mod test {
     }
 
     #[test]
+    fn resource_records_are_encoded_correctly() {
+        for (alias, resource_record) in TEST_RDATA {
+            assert_eq!(*resource_record, AvahiClient::encode_rdata(alias).as_slice());
+        }
+    }
+
+    // TODO: All Linux-specific tests should be mocked
+
+    #[test]
     #[cfg(target_os = "linux")]
     fn dbus_creation_succeeds() -> Result<(), ErrorWrapper> {
-        let avahi_client = AvahiClient::new()?;
-        eprintln!("**** avahi_client.get_version() = {}", avahi_client.get_version()?);
-        eprintln!(
-            "**** avahi_client.get_host_name_fqdn() = {}",
-            avahi_client.get_host_name_fqdn()?
-        );
+        AvahiClient::new()?;
         Ok(())
     }
 
@@ -120,9 +126,26 @@ mod test {
     }
 
     #[test]
-    fn resource_records_are_created_correctly() {
-        for (alias, resource_record) in TEST_DATA {
-            assert_eq!(*resource_record, AvahiClient::encode_rdata(alias).as_slice());
-        }
+    #[cfg(target_os = "linux")]
+    fn get_host_name_fqdn_succeeds() -> Result<(), ErrorWrapper> {
+        eprintln!(
+            "**** avahi_client.get_host_name_fqdn() = {}",
+            AvahiClient::new()?.get_host_name_fqdn()?
+        );
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn get_proxy_succeeds() -> Result<(), ErrorWrapper> {
+        AvahiClient::new()?.get_proxy();
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn get_version_succeeds() -> Result<(), ErrorWrapper> {
+        eprintln!("**** avahi_client.get_version() = {}", AvahiClient::new()?.get_version()?);
+        Ok(())
     }
 }

@@ -1,3 +1,8 @@
+//! Read, write, and modify an aliases file
+//!
+//! The `AliasFile` struct abstracts the details of managing the aliases file
+//! and the aliases it contains.
+
 #![warn(clippy::all)]
 
 use std::io::{BufWriter, Read, Write};
@@ -9,8 +14,8 @@ use crate::Line;
 
 #[derive(Debug)]
 pub struct AliasesFile {
-    file_name: String,
-    lines: Vec<Line>,
+    file_name: String, // #[grcov(off)]
+    lines: Vec<Line>,  // #[grcov(off)]
 }
 
 impl<'a> AliasesFile {
@@ -114,26 +119,33 @@ mod tests {
     use crate::ErrorWrapper;
     use super::AliasesFile;
 
+    const FILE_HEADER: &str = "# This is a unit test temporary file";
+    const VALID_ALIASES: [&str; 5] = ["a.local", "b.local", "c.local", "d.local", "e.local"];
+    const INVALID_ALIASES: [&str; 5] = [".local", "x .local", "x*.local", "-.local", "*.local"];
+
     /// Ensure a correct avahi-aliases file loads.
     #[test]
     fn from_file_loads_expected_content() {
+        let fn_name = stringify!(from_file_loads_expected_content);
         for n in 0..5 {
-            let test_file = TestFile::new("data/test-avahi-aliases.txt", n, &[]);
-            let aliases_file = AliasesFile::from_file(test_file.file_name, false).unwrap();
-            assert_eq!(aliases_file.lines().len(), n);
+            let test_file = TestFile::new(fn_name, n, true);
+            let aliases_file = AliasesFile::from_file(&test_file.file_name, true).unwrap();
+            assert_eq!(aliases_file.lines()[0].text(), FILE_HEADER);
             for i in 0..n {
-                assert_eq!(aliases_file.lines()[i].text(), format!("a{}.local", i));
+                assert_eq!(aliases_file.lines()[i + 1].text(), VALID_ALIASES[i]);
             }
+            assert_eq!(aliases_file.lines()[n + 1].text(), INVALID_ALIASES[n]);
         }
     }
 
     /// Ensure the alias count is correct.
     #[test]
     fn alias_count_returns_correct_count() {
+        let fn_name = stringify!(alias_count_returns_correct_count);
         for n in 0..5 {
-            let test_file = TestFile::new("data/test-avahi-aliases-count.txt", n, &[]);
-            let aliases_file = AliasesFile::from_file(test_file.file_name, false).unwrap();
-            assert_eq!(aliases_file.lines().len(), n);
+            let test_file = TestFile::new(fn_name, n, false);
+            let aliases_file = AliasesFile::from_file(&test_file.file_name, false).unwrap();
+            assert_eq!(aliases_file.lines().len(), n + 1);
             assert_eq!(aliases_file.alias_count(), n);
         }
     }
@@ -142,12 +154,38 @@ mod tests {
     /// when the `invalid_alias` parameter is `false`.
     #[test]
     fn load_fails_when_invalid_alias_not_allowed() {
+        let fn_name = stringify!(load_fails_when_invalid_alias_not_allowed);
         for n in 1..5 {
-            let test_file =
-                TestFile::new("data/avahi-alias-append-invalid-not-allowed.txt", n, &[n - 1]);
-            let aliases_file = AliasesFile::from_file(test_file.file_name, false);
-            eprintln!("**** aliases_file = {:?}", aliases_file);
+            let test_file = TestFile::new(fn_name, n, true);
+            let aliases_file = AliasesFile::from_file(&test_file.file_name, false);
             assert!(aliases_file.is_err());
+        }
+    }
+
+    /// Ensure `aliases` returns only the valid aliases.
+    #[test]
+    fn aliases_returns_expected_aliases() {
+        let fn_name = stringify!(aliases_returns_expected_aliases);
+        for n in 0..5 {
+            let test_file = TestFile::new(fn_name, n, true);
+            let aliases_file = AliasesFile::from_file(&test_file.file_name, true).unwrap();
+            for i in 0..n {
+                assert_eq!(aliases_file.all_aliases()[i].unwrap(), VALID_ALIASES[i]);
+            }
+        }
+    }
+
+    /// Ensure `all_aliases` returns the valid and invalid aliases.
+    #[test]
+    fn all_aliases_returns_expected_aliases() {
+        let fn_name = stringify!(all_aliases_returns_expected_aliases);
+        for n in 0..5 {
+            let test_file = TestFile::new(fn_name, n, true);
+            let aliases_file = AliasesFile::from_file(&test_file.file_name, true).unwrap();
+            for i in 0..n {
+                assert_eq!(aliases_file.all_aliases()[i].unwrap(), VALID_ALIASES[i]);
+            }
+            assert_eq!(aliases_file.all_aliases()[n].unwrap_err(), INVALID_ALIASES[n]);
         }
     }
 
@@ -155,11 +193,10 @@ mod tests {
     /// when the `invalid_alias` parameter is `true`.
     #[test]
     fn load_succeeds_when_invalid_alias_allowed() {
+        let fn_name = stringify!(load_succeeds_when_invalid_alias_allowed);
         for n in 1..5 {
-            let test_file =
-                TestFile::new("data/avahi-alias-append-invalid-allowed.txt", n, &[n - 1]);
-            let aliases_file = AliasesFile::from_file(test_file.file_name, true);
-            eprintln!("**** aliases_file = {:?}", aliases_file);
+            let test_file = TestFile::new(fn_name, n, true);
+            let aliases_file = AliasesFile::from_file(&test_file.file_name, true);
             assert!(aliases_file.is_ok());
         }
     }
@@ -167,13 +204,14 @@ mod tests {
     /// Ensure the append function appends the specified aliases.
     #[test]
     fn append_appends() {
+        let fn_name = stringify!(append_appends);
         for n in 0..5 {
-            let test_file = TestFile::new("data/avahi-aliases-append.txt", n, &[]);
-            let aliases_file = AliasesFile::from_file(test_file.file_name, false).unwrap();
+            let test_file = TestFile::new(fn_name, n, false);
+            let aliases_file = AliasesFile::from_file(&test_file.file_name, false).unwrap();
             aliases_file
                 .append(&vec!["b0.local"])
                 .unwrap_or_else(|error| panic!("Append failed: {}", error));
-            let aliases_file = AliasesFile::from_file(test_file.file_name, false).unwrap();
+            let aliases_file = AliasesFile::from_file(&test_file.file_name, false).unwrap();
             let aliases = aliases_file.aliases();
             assert_eq!(aliases[n], "b0.local");
         }
@@ -182,25 +220,26 @@ mod tests {
     /// Ensure the remove function renews the specified aliases.
     #[test]
     fn remove_removes() -> Result<(), Error> {
+        let fn_name = stringify!(remove_removes);
         for n in 0..5 {
-            let test_file = TestFile::new("data/avahi-aliases-remove.txt", n, &[]);
-            let aliases_file = AliasesFile::from_file(test_file.file_name, false).unwrap();
+            let test_file = TestFile::new(fn_name, n, false);
+            let aliases_file = AliasesFile::from_file(&test_file.file_name, false).unwrap();
             if n >= 2 {
                 aliases_file
-                    .remove(&["a0.local", "a2.local"], false)
+                    .remove(&[VALID_ALIASES[0], VALID_ALIASES[2]], false)
                     .unwrap_or_else(|error| panic!("Remove failed: {}", error));
             } else if n > 0 {
                 aliases_file
-                    .remove(&["a0.local"], false)
+                    .remove(&[VALID_ALIASES[0]], false)
                     .unwrap_or_else(|error| panic!("Remove failed: {}", error));
             }
-            let aliases_file = AliasesFile::from_file(test_file.file_name, false).unwrap();
+            let aliases_file = AliasesFile::from_file(&test_file.file_name, false).unwrap();
             let aliases = aliases_file.aliases();
             if n > 3 {
-                assert_eq!(aliases[0], "a1.local");
-                assert_eq!(aliases[1], "a3.local");
+                assert_eq!(aliases[0], VALID_ALIASES[1]);
+                assert_eq!(aliases[1], VALID_ALIASES[3]);
             } else if n > 1 {
-                assert_eq!(aliases[0], "a1.local");
+                assert_eq!(aliases[0], VALID_ALIASES[1]);
             }
         }
         Ok(())
@@ -209,11 +248,12 @@ mod tests {
     /// Ensure remove --force removes invalid aliases.
     #[test]
     fn remove_force_removes_invalid_alias_in_avahi_aliases_file() -> Result<(), ErrorWrapper> {
+        let fn_name = stringify!(remove_force_removes_invalid_alias_in_avahi_aliases_file);
         for n in 1..5 {
-            let test_file = TestFile::new("data/avahi-aliases-remove-force.txt", n, &[n - 1]);
-            let aliases_file = AliasesFile::from_file(test_file.file_name, true).unwrap();
+            let test_file = TestFile::new(fn_name, n, true);
+            let aliases_file = AliasesFile::from_file(&test_file.file_name, true).unwrap();
             aliases_file.remove(&[], false)?;
-            let aliases_file = AliasesFile::from_file(test_file.file_name, false);
+            let aliases_file = AliasesFile::from_file(&test_file.file_name, false);
             assert!(aliases_file.is_ok());
         }
         Ok(())
@@ -221,29 +261,27 @@ mod tests {
 
     /// Create and remove (using Drop trait) test files
     struct TestFile {
-        file_name: &'static str,
+        file_name: String,
     }
 
     impl<'a> TestFile {
-        fn new(
-            file_name: &'static str, line_count: usize, invalid_lines: &[usize],
-        ) -> TestFile {
+        fn new(file_name: &'static str, line_count: usize, include_invalid: bool) -> TestFile {
+            let file_name = format!("data/{}-{}.txt", file_name, line_count);
             fs::OpenOptions::new()
                 .write(true)
                 .create(true)
                 .truncate(true)
-                .open(file_name)
+                .open(&file_name)
                 .map(BufWriter::new)
                 .and_then(|mut writer| {
+                    writer.write_all(format!("{}\n", FILE_HEADER).as_bytes())?;
                     for i in 0..line_count {
-                        writer.write_all(format!("a{}.local\n", i).as_bytes())?;
-                        if invalid_lines.contains(&i) {
-                            static INVALID_ALIASES: [&str; 5] =
-                                ["", "xyzzy ", "xyzz*", "-", "*.*"];
-                            writer.write_all(
-                                format!("{}.local\n", INVALID_ALIASES[i]).as_bytes(),
-                            )?;
-                        }
+                        writer.write_all(format!("{}\n", VALID_ALIASES[i]).as_bytes())?;
+                    }
+                    if include_invalid {
+                        writer.write_all(
+                            format!("{}\n", INVALID_ALIASES[line_count]).as_bytes(),
+                        )?;
                     }
                     Ok(())
                 })
@@ -260,7 +298,7 @@ mod tests {
 
     impl Drop for TestFile {
         fn drop(&mut self) {
-            fs::remove_file(self.file_name).unwrap_or_else(|_| {
+            fs::remove_file(&self.file_name).unwrap_or_else(|_| {
                 panic!(
                     "Could not delete test file: cwd={:?}, file={:?}",
                     std::env::current_dir(),

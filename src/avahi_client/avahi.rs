@@ -145,7 +145,7 @@ impl PartialEq<ClientState> for ServerState {
 //**********************************************************************************************
 
 #[cfg(test)]
-mod test {
+mod tests {
 
     use super::*;
 
