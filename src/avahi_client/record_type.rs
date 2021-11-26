@@ -35,11 +35,7 @@ pub enum RecordType {
     Srv   = 33,
 }
 
-impl dbus::arg::Append for RecordType {
-    #[inline(always)]
-    fn append(self, ia: &mut dbus::arg::IterAppend<'_>) { ia.append(self as u16); }
-    #[inline(always)]
-    fn append_by_ref(&self, ia: &mut dbus::arg::IterAppend<'_>) { ia.append(*self as u16); }
+super::enums::dbus_arg_iter_append!(RecordType);
 
 //**********************************************************************************************
 // Unit Tests

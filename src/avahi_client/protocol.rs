@@ -15,12 +15,7 @@ pub enum Protocol {
     IPv6        = 1,
 }
 
-impl dbus::arg::Append for Protocol {
-    #[inline(always)]
-    fn append(self, ia: &mut dbus::arg::IterAppend<'_>) { ia.append(self as i32); }
-    #[inline(always)]
-    fn append_by_ref(&self, ia: &mut dbus::arg::IterAppend<'_>) { ia.append(*self as i32); }
-}
+super::enums::dbus_arg_iter_append!(Protocol);
 
 //**********************************************************************************************
 // Unit Tests
