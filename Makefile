@@ -16,19 +16,18 @@ lib: target/debug/avahi-aliases.rlib
 
 target/debug/avahi-aliases.rlib: $(lib_source)
 	rm -f *.profraw target/debug/deps/avahi_alias*.gcd[ao]
-	RUSTFLAGS="-Z instrument-coverage" \
-	  LLVM_PROFILE_FILE="avahi-aliases-%m-test.profraw" \
-	  cargo +nightly test --lib --tests --no-fail-fast
-
-cov: lib
 	rm -f target/debug/deps/avahi_aliases-*.gcda
 	CARGO_INCREMENTAL=0 \
 	  RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code \
 	    -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort" \
 	  RUSTDOCFLAGS="-Cpanic=abort" \
 	  cargo +nightly test --lib --tests --no-fail-fast
-	grcov . -s . --binary-path ./target/debug/ -t html --branch --ignore-not-existing \
-	  -o ./target/debug/coverage/
+	echo '^mod tests \{\$$'
+	grcov . -s . --binary-path ./target/debug/ -t html -o ./target/debug/coverage/ \
+	  --branch --ignore-not-existing \
+	  --excl-start 'mod tests \{' --excl-br-start 'mod tests \{' \
+	  --excl-line '\#\[derive\(|// \#\[grcov\(off\)\]' \
+	  --excl-br-line '\#\[derive\(|// \#\[grcov\(off\)\]'
 
 bin: target/debug/avahi-alias target/debug/avahi-alias-daemon
 
@@ -90,9 +89,15 @@ dump:
 	@echo "alias_source  = $(alias_source)"
 	@echo "daemon_source = $(daemon_source)"
 
+# `rust-setup` This is likely incomplete
 setup-rust:
 	@echo "Install the nightly toolchain"
+	rustup toolchain install nightly \
+	  --allow-downgrade \
+	  --profile minimal \
+	  --component clippy
 	@echo "Install coverage tools"
+	cargo install grcov
 	cargo install rustfilt
 	rustup component add llvm-tools-preview
-	cargo install cargo-binutils
+	#cargo install cargo-binutils
