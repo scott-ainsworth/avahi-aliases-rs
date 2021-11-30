@@ -12,4 +12,4 @@ macro_rules! dbus_arg_iter_append {
     };
 }
 
-pub(crate) use dbus_arg_iter_append;
+pub(super) use dbus_arg_iter_append;

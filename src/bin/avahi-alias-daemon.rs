@@ -7,8 +7,8 @@ use ::time::OffsetDateTime;
 use structopt::StructOpt;
 use anyhow::Result;
 use avahi_aliases::{
-    init_console_logging, init_syslog_logging, AliasesFile, AvahiClient, AvahiRecord,
-    DaemonOpts, ErrorWrapper,
+    avahi, init_console_logging, init_syslog_logging, AliasesFile, AvahiRecord, DaemonOpts,
+    ErrorWrapper, Server,
 };
 
 #[derive(PartialEq)]
@@ -32,7 +32,7 @@ fn inner_main(opts: DaemonOpts) -> Result<(), ErrorWrapper> {
     init_logging(opts.common.verbose, opts.common.debug, opts.syslog)?;
     signon_app();
     let file_name = opts.common.file.as_str();
-    let avahi_client = AvahiClient::new()?;
+    let avahi_client = Server::new()?;
     signon_avahi(&avahi_client)?;
     load_publish_loop(&avahi_client, file_name, time::Duration::new(opts.polling_interval, 0))?;
     Ok(())
@@ -73,7 +73,7 @@ fn load_aliases(
 }
 
 fn load_publish_loop(
-    avahi_client: &AvahiClient, file_name: &str, polling_interval: time::Duration,
+    avahi_client: &Server, file_name: &str, polling_interval: time::Duration,
 ) -> Result<(), ErrorWrapper> {
     let mut modified_size = ModifiedSize { last_modified: time::UNIX_EPOCH, len: 0 };
 
@@ -93,7 +93,7 @@ fn load_publish_loop(
 }
 
 fn publish_aliases<'a>(
-    avahi_client: &AvahiClient, aliases_file: &AliasesFile, file_name: &'a str,
+    avahi_client: &Server, aliases_file: &AliasesFile, file_name: &'a str,
     modified_size: &ModifiedSize,
 ) -> Result<(), ErrorWrapper> {
     let last_modified: OffsetDateTime = modified_size.last_modified.into();
@@ -109,13 +109,14 @@ fn publish_aliases<'a>(
     let fqdn = avahi_client.get_host_name_fqdn()?;
     log::debug!(r#"Publishing aliases from "{}" for "{}""#, file_name, fqdn,);
 
-    let rdata = AvahiClient::encode_rdata(&fqdn);
+    let rdata = avahi::encode_rdata(&fqdn);
     let group = avahi_client.new_entry_group()?;
     for alias in aliases_file.all_aliases() {
         match alias {
             Ok(alias) => {
                 log::info!("Publishing alias {}", alias);
-                let cname_record = AvahiRecord::new_cname(alias, 60, &rdata);
+                let cname_record =
+                    AvahiRecord::new_cname(alias, time::Duration::from_secs(60), &rdata);
                 group.add_record(cname_record)?;
             },
             Err(a) => log::info!(r#"WARNING: invalid alias "{}" ignored"#, a),
@@ -136,7 +137,7 @@ fn signon_app() {
     log::info!("{} {} {}", app.get_name(), clap::crate_version!(), clap::crate_authors!());
 }
 
-fn signon_avahi(avahi_client: &AvahiClient) -> Result<(), ErrorWrapper> {
+fn signon_avahi(avahi_client: &Server) -> Result<(), ErrorWrapper> {
     let version = avahi_client.get_version()?;
     let host_fqdn = avahi_client.get_host_name_fqdn()?;
     log::info!("{}, host fqdn: {}", version, host_fqdn);

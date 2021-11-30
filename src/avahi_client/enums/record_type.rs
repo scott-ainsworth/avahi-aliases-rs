@@ -1,5 +1,6 @@
 #![warn(clippy::all)]
 
+/// Avahi DNS record types
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, num_enum::IntoPrimitive, num_enum::TryFromPrimitive,
 )]
@@ -35,10 +36,16 @@ pub enum RecordType {
     Srv   = 33,
 }
 
-super::enums::dbus_arg_iter_append!(RecordType);
+super::dbus_arg_iter_append!(RecordType);
 
 //**********************************************************************************************
-// Unit Tests
+// ERROR
+//**********************************************************************************************
+
+pub type Error = num_enum::TryFromPrimitiveError<RecordType>;
+
+//**********************************************************************************************
+// UNIT TESTS
 //**********************************************************************************************
 
 #[cfg(test)]

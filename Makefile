@@ -113,13 +113,38 @@ target/release/avahi-alias-daemon: $(daemon_source) release-lib
 	strip $@
 
 ########################################
+# AVAHI DBUS CLIENT GENERATED CODE
+########################################
+
+AVAHI_SRC := github/avahi/avahi-daemon
+GEN_DEST := src/avahi_client/avahi_dbus
+CODEGEN := ~/.cargo/bin/dbus-codegen-rust
+
+generated-dbus-code: $(GEN_DEST)/server.rs $(GEN_DEST)/entry_group.rs
+
+$(GEN_DEST)/server.rs: $(AVAHI_SRC)/org.freedesktop.Avahi.Server.xml $(CODEGEN)
+	mkdir -p $(GEN_DEST)
+	bin/generate-dbus-code < $< > $@
+
+$(GEN_DEST)/entry_group.rs: $(AVAHI_SRC)/org.freedesktop.Avahi.EntryGroup.xml $(CODEGEN)
+	mkdir -p $(GEN_DEST)
+	bin/generate-dbus-code < $< > $@
+
+$(AVAHI_SRC)/org.freedesktop.Avahi.Server.xml \
+$(AVAHI_SRC)/org.freedesktop.Avahi.EntryGroup.xml:
+	git clone https://github.com/lathiat/avahi.git github/avahi
+
+$(CODEGEN):
+	cargo install dbus-codegen
+
+########################################
 # UTILITY
 ########################################
 
 .PHONY: clean fmt dofmt dump setup-rust
 
 clean:
-	rm -fr target test-results
+	rm -fr target test-results github
 	rm -f *.profraw *.profdata
 
 fmt:

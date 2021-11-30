@@ -7,7 +7,7 @@ pub use alias::{is_valid_alias, new_alias, validate_aliases, Alias};
 mod aliases_file;
 pub use aliases_file::AliasesFile;
 mod avahi_client;
-pub use avahi_client::{avahi, AvahiClient, AvahiRecord};
+pub use avahi_client::{avahi, AvahiRecord, Server};
 mod error;
 pub use error::ErrorWrapper;
 mod line;

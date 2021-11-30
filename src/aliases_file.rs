@@ -1,7 +1,4 @@
-//! Read, write, and modify an aliases file
-//!
-//! The `AliasFile` struct abstracts the details of managing the aliases file
-//! and the aliases it contains.
+//! Read, write, and modify an Avahi aliases file
 
 #![warn(clippy::all)]
 
@@ -12,6 +9,11 @@ use crate::alias::{self, Alias};
 use crate::error::ErrorWrapper;
 use crate::Line;
 
+/// An Avahi aliases file.
+///
+/// The `AliasFile` struct encapsulates the details of managing the aliases file
+/// and the aliases it contains. It provides a high-level interface to load, add,
+/// and remove aliases.
 #[derive(Debug)]
 pub struct AliasesFile {
     file_name: String, // #[grcov(off)]

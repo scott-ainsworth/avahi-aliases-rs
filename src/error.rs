@@ -9,12 +9,41 @@ use std::io;
 
 use thiserror::Error;
 
+use crate::avahi_client::avahi;
+
 /// An enum to consolidate all errors passed to user-aware and logging code.
 #[derive(Error, Debug)]
 pub enum ErrorWrapper {
+    /// Attempted to convert an unrecognized Avahi `ClientState` value.
+    #[error(transparent)]
+    AvahiClientStateOutOfRangeError(#[from] avahi::ClientStateOutOfRangeError),
+
+    /// Attempted to convert an unrecognized Avahi `EntryGroupState` value.
+    #[error(transparent)]
+    AvahiEntryGroupStateOutOfRangeError(#[from] avahi::EntryGroupStateOutOfRangeError),
+
+    /// Attempted to convert an unrecognized Avahi `Interface` value.
+    #[error(transparent)]
+    AvahiInterfaceOutOfRangeError(#[from] avahi::InterfaceOutOfRangeError),
+
+    /// Attempted to convert an unrecognized Avahi `Protocol` value.
+    #[error(transparent)]
+    AvahiProtocolOutOfRangeError(#[from] avahi::ProtocolOutOfRangeError),
+
+    /// Attempted to convert an unrecognized Avahi `RecordClass` value.
+    #[error(transparent)]
+    AvahiRecordClassOutOfRangeError(#[from] avahi::RecordClassOutOfRangeError),
+
+    /// Attempted to convert an unrecognized Avahi `RecordType` value.
+    #[error(transparent)]
+    AvahiRecordTypeOutOfRangeError(#[from] avahi::RecordTypeOutOfRangeError),
+
+    /// Attempted to convert an unrecognized Avahi `ServerState` value.
+    #[error(transparent)]
+    AvahiServerStateOutOfRangeError(#[from] avahi::ServerStateOutOfRangeError),
+
     /// An error setting up or using debug
-    //#[error(r#"D-Bus failure: {message}"#)]
-    #[error(r#"D-Bus failure: {message}"#)]
+    #[error("D-Bus failure: {message}")]
     DBusError { message: String },
 
     /// An invalid alias
@@ -55,14 +84,14 @@ pub enum ErrorWrapper {
         source: io::Error,
     },
 
-    /// Invalid value converting an int to an enum
-    #[error(r#"Invalid {} value: {}."#, enum_name, value)]
-    EnumOutOfRangeError {
-        /// Name of the enum
-        enum_name: String,
-        /// The out-of-range value
-        value: i32,
-    },
+    // /// Invalid value converting an int to an enum
+    // #[error(r#"Invalid {} value: {}."#, enum_name, value)]
+    // EnumOutOfRangeError {
+    //     /// Name of the enum
+    //     enum_name: String,
+    //     /// The out-of-range value
+    //     value: i32,
+    // },
 
     // /// An I/O error
     // #[error("could not publish aliases")]
@@ -147,15 +176,15 @@ impl ErrorWrapper {
         ErrorWrapper::OpenError { file_name: file_name.into(), source }
     }
 
-    /// Initialize a new EnumOutOfRangeError
-    ///
-    /// A helper function that copies `enum_name` to a `String`s owned by
-    /// the `EnumOutOfRangeError`.
-    pub fn new_enum_out_of_range_error<N>(enum_name: N, value: i32) -> ErrorWrapper
-    where
-        N: Into<String>, {
-        ErrorWrapper::EnumOutOfRangeError { enum_name: enum_name.into(), value }
-    }
+    // /// Initialize a new EnumOutOfRangeError
+    // ///
+    // /// A helper function that copies `enum_name` to a `String`s owned by
+    // /// the `EnumOutOfRangeError`.
+    // pub fn new_enum_out_of_range_error<N>(enum_name: N, value: i32) -> ErrorWrapper
+    // where
+    //     N: Into<String>, {
+    //     ErrorWrapper::EnumOutOfRangeError { enum_name: enum_name.into(), value }
+    // }
 
     /// Initialize a new ReadError
     ///
@@ -186,14 +215,133 @@ impl ErrorWrapper {
 mod tests {
     use ErrorWrapper::*;
 
+    use crate::avahi_client::avahi;
+    use crate::avahi::{
+        ClientState, EntryGroupState, Interface, Protocol, RecordClass, RecordType, ServerState,
+    };
     use super::*;
 
     type R = Result<(), ErrorWrapper>;
 
     static ALIAS: &str = "a0.local";
-    static ENUM_NAME: &str = "Enum";
     static FILENAME: &str = "avahi-aliases";
     static MESSAGE: &str = "message";
+
+    //***************************************************************************************
+    // ErrorWrapper::Avahi...OutOfRangeError
+
+    #[test]
+    fn avahi_client_state_enum_out_of_range_error_creation_works() {
+        let result = ClientState::try_from(-99);
+        let error_wrapper = ErrorWrapper::AvahiClientStateOutOfRangeError(result.unwrap_err());
+        assert!(matches!(error_wrapper, ErrorWrapper::AvahiClientStateOutOfRangeError(..)));
+    }
+
+    #[test]
+    fn from_avahi_client_state_enum_out_of_range_error_produces_correct_error_wrapper() {
+        fn convert(value: i32) -> Result<avahi::ClientState, ErrorWrapper> {
+            Ok(avahi::ClientState::try_from(value)?)
+        }
+        let result = convert(-99);
+        assert!(matches!(result, Err(ErrorWrapper::AvahiClientStateOutOfRangeError(..))));
+    }
+
+    #[test]
+    fn avahi_entry_group_state_enum_out_of_range_error_creation_works() {
+        let result = EntryGroupState::try_from(-99);
+        let error_wrapper =
+            ErrorWrapper::AvahiEntryGroupStateOutOfRangeError(result.unwrap_err());
+        assert!(matches!(error_wrapper, ErrorWrapper::AvahiEntryGroupStateOutOfRangeError(..)));
+    }
+
+    #[test]
+    fn from_avahi_entry_group_enum_out_of_range_error_produces_correct_error_wrapper() {
+        fn convert(value: i32) -> Result<avahi::EntryGroupState, ErrorWrapper> {
+            Ok(avahi::EntryGroupState::try_from(value)?)
+        }
+        let result = convert(-99);
+        assert!(matches!(result, Err(ErrorWrapper::AvahiEntryGroupStateOutOfRangeError(..))));
+    }
+
+    #[test]
+    fn avahi_interface_enum_out_of_range_error_creation_works() {
+        let result = Interface::try_from(-99);
+        let error_wrapper = ErrorWrapper::AvahiInterfaceOutOfRangeError(result.unwrap_err());
+        assert!(matches!(error_wrapper, ErrorWrapper::AvahiInterfaceOutOfRangeError(..)));
+    }
+
+    #[test]
+    fn from_avahi_interface_enum_out_of_range_error_produces_correct_error_wrapper() {
+        fn convert(value: i32) -> Result<avahi::Interface, ErrorWrapper> {
+            Ok(avahi::Interface::try_from(value)?)
+        }
+        let result = convert(-99);
+        assert!(matches!(result, Err(ErrorWrapper::AvahiInterfaceOutOfRangeError(..))));
+    }
+
+    #[test]
+    fn avahi_protocol_enum_out_of_range_error_creation_works() {
+        let result = Protocol::try_from(-99);
+        let error_wrapper = ErrorWrapper::AvahiProtocolOutOfRangeError(result.unwrap_err());
+        assert!(matches!(error_wrapper, ErrorWrapper::AvahiProtocolOutOfRangeError(..)));
+    }
+
+    #[test]
+    fn from_avahi_protocol_enum_out_of_range_error_produces_correct_error_wrapper() {
+        fn convert(value: i32) -> Result<avahi::Protocol, ErrorWrapper> {
+            Ok(avahi::Protocol::try_from(value)?)
+        }
+        let result = convert(-99);
+        assert!(matches!(result, Err(ErrorWrapper::AvahiProtocolOutOfRangeError(..))));
+    }
+
+    #[test]
+    fn avahi_record_class_enum_out_of_range_error_creation_works() {
+        let result = RecordClass::try_from(99);
+        let error_wrapper = ErrorWrapper::AvahiRecordClassOutOfRangeError(result.unwrap_err());
+        assert!(matches!(error_wrapper, ErrorWrapper::AvahiRecordClassOutOfRangeError(..)));
+    }
+
+    #[test]
+    fn from_avahi_record_class_enum_out_of_range_error_produces_correct_error_wrapper() {
+        fn convert(value: u16) -> Result<avahi::RecordClass, ErrorWrapper> {
+            Ok(avahi::RecordClass::try_from(value)?)
+        }
+        let result = convert(99);
+        assert!(matches!(result, Err(ErrorWrapper::AvahiRecordClassOutOfRangeError(..))));
+    }
+
+    #[test]
+    fn avahi_record_type_enum_out_of_range_error_creation_works() {
+        let result = RecordType::try_from(99);
+        let error_wrapper = ErrorWrapper::AvahiRecordTypeOutOfRangeError(result.unwrap_err());
+        assert!(matches!(error_wrapper, ErrorWrapper::AvahiRecordTypeOutOfRangeError(..)));
+    }
+
+    #[test]
+    fn from_avahi_record_type_enum_out_of_range_error_produces_correct_error_wrapper() {
+        fn convert(value: u16) -> Result<avahi::RecordType, ErrorWrapper> {
+            Ok(avahi::RecordType::try_from(value)?)
+        }
+        let result = convert(99);
+        assert!(matches!(result, Err(ErrorWrapper::AvahiRecordTypeOutOfRangeError(..))));
+    }
+
+    #[test]
+    fn avahi_server_state_enum_out_of_range_error_creation_works() {
+        let result = ServerState::try_from(-99);
+        let error_wrapper = ErrorWrapper::AvahiServerStateOutOfRangeError(result.unwrap_err());
+        assert!(matches!(error_wrapper, ErrorWrapper::AvahiServerStateOutOfRangeError(..)));
+    }
+
+    #[test]
+    fn from_avahi_server_state_enum_out_of_range_error_produces_correct_error_wrapper() {
+        fn convert(value: i32) -> Result<avahi::ServerState, ErrorWrapper> {
+            Ok(avahi::ServerState::try_from(value)?)
+        }
+        let result = convert(-99);
+        assert!(matches!(result, Err(ErrorWrapper::AvahiServerStateOutOfRangeError(..))));
+    }
 
     //******************************************************************************************
     // ErrorWrapper::DBusError
@@ -367,32 +515,6 @@ mod tests {
                     io::Error::new(io::ErrorKind::AddrInUse, MESSAGE)
                 )
             )
-        }
-    }
-
-    //***************************************************************************************
-    // ErrorWrapper::EnumOutOfRangeError
-
-    #[test]
-    fn enum_out_of_range_error_creation_works() {
-        if let Err(error) =
-            Err(EnumOutOfRangeError { enum_name: ENUM_NAME.to_owned(), value: 0 }) as R
-        {
-            let _ = format!("{}", error);
-        }
-    }
-
-    #[test]
-    fn new_enum_out_of_range_error_creation_works() {
-        let _ = ErrorWrapper::new_enum_out_of_range_error(ENUM_NAME, 0);
-    }
-
-    #[test]
-    fn enum_out_of_range_error_produces_correct_message() {
-        if let Err(error) =
-            Err(EnumOutOfRangeError { enum_name: ENUM_NAME.to_owned(), value: 0 }) as R
-        {
-            assert_eq!(format!("{}", error), format!(r#"Invalid {} value: {}."#, ENUM_NAME, 0))
         }
     }
 
