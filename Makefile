@@ -1,81 +1,125 @@
 .DEFAULT: test
 
-lib_source    := $(wildcard src/*.rs) $(wildcard src/*/*.rs)
+lib_source    := $(wildcard src/*.rs) $(wildcard src/avahi-client/*.rs src/avahi-client/*/*.rs)
 alias_source  := $(wildcard src/bin/avahi-alias/*.rs)
 daemon_source := $(wildcard src/bin/avahi-alias-daemon/*.rs)
+
+########################################
+# CONVENIENCE TARGETS
+########################################
+
+help:
+	@echo "Available Targets:"
+	@echo ""
+	@echo "test         Test libavahi_aliases.rlib (debug)"
+	@echo "cov          Create the test coverage report (debug)"
+	@echo "clippy       Run clippy (debug)"
+	@echo "lib          Build libavahi_aliases.rlib (debug)"
+	@echo "doc          Build the libavahi_aliases.rlib documentation"
+	@echo "bin          Build avahi-alias and avahi-alias-deamon"
+	@echo "release      Build release versions of everything"
+	@echo "clean        Remove all build artifacts"
 
 ########################################
 # DEBUG
 ########################################
 
-.PHONY: debug coverage
+.PHONY: debug test cov clippy lib doc bin
 
-debug: lib bin
+debug: cov lib doc bin
 
-lib: target/debug/avahi-aliases.rlib
+cov: target/debug/coverage/index.html
 
-target/debug/avahi-aliases.rlib: $(lib_source)
-	rm -f *.profraw target/debug/deps/avahi_alias*.gcd[ao]
-	rm -f target/debug/deps/avahi_aliases-*.gcda
-	CARGO_INCREMENTAL=0 \
-	  RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code \
-	    -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort" \
-	  RUSTDOCFLAGS="-Cpanic=abort" \
-	  cargo +nightly test --lib --tests --no-fail-fast
-	echo '^mod tests \{\$$'
-	grcov . -s . --binary-path ./target/debug/ -t html -o ./target/debug/coverage/ \
-	  --branch --ignore-not-existing \
-	  --excl-start 'mod tests \{' --excl-br-start 'mod tests \{' \
-	  --excl-line '\#\[derive\(|// \#\[grcov\(off\)\]' \
-	  --excl-br-line '\#\[derive\(|// \#\[grcov\(off\)\]'
+lib: target/debug/libavahi_aliases.rlib
+
+doc: target/doc/avahi_aliases/index.html
 
 bin: target/debug/avahi-alias target/debug/avahi-alias-daemon
 
-target/debug/avahi-alias target/debug/avahi-alias-daemon: lib $(alias_source) $(daemon_source)
-	cargo +nightly build --bin
+DEBUG_ENV := CARGO_INCREMENTAL=0
 
-clippy: debug
-	cargo +nightly clippy -- -A clippy::all
+DEBUG_TEST_ENV := \
+	CARGO_INCREMENTAL=0 \
+	RUSTFLAGS="\
+	  -Clink-dead-code -Coverflow-checks=off -Cpanic=abort \
+	  -Zprofile -Zpanic_abort_tests" \
+	RUSTDOCFLAGS="-Cpanic=abort"
+
+test:
+	$(DEBUG_TEST_ENV) cargo +nightly test --lib --no-fail-fast
+	$(DEBUG_TEST_ENV) cargo +nightly test --doc --no-fail-fast
+
+target/debug/coverage/index.html: test
+	grcov . --source-dir . --binary-path ./target/debug/ --branch \
+	  --output-type html --output-path target/debug/coverage/ \
+	  --ignore 'src/bin/*.rs' \
+	  --ignore 'src/avahi_client/avahi_dbus/*.rs' \
+	  --ignore 'src/avahi_client/enums/macros.rs' \
+	  --excl-start '^#\[cfg\(test\)\]|^// coverage\(off\)' \
+	  --excl-br-start '^#\[cfg\(test\)\]|^// coverage\(off\)' \
+	  --excl-stop '^// coverage\(on\)' \
+	  --excl-br-stop '^// coverage\(on\)' \
+	  --excl-line '\#\[derive\(|// cov\(skip\)' \
+	  --excl-br-line '\#\[derive\(|// cov\(skip\)'
+
+clippy:
+	$(DEBUG_ENV) cargo +nightly clippy -- -A clippy::all
+
+target/debug/libavahi_aliases.rlib: $(lib_source) clippy
+	rm -f *.profraw target/debug/deps/avahi_alias*.gcd[ao]
+	rm -f target/debug/deps/avahi_aliases-*.gcda
+	$(DEBUG_ENV) cargo +nightly build --lib
+
+target/doc/avahi_aliases/index.html: lib
+	rm -fr $(@D)
+	$(DEBUG_ENV) cargo +nightly doc --no-deps --document-private-items
+
+target/debug/avahi-alias: $(alias_source) lib
+	$(DEBUG_ENV) cargo +nightly build --bin $(@F)
+
+target/debug/avahi-alias-daemon: $(daemon_source) lib
+	$(DEBUG_ENV) cargo +nightly build --bin $(@F)
 
 ########################################
 # RELEASE
 ########################################
 
-.PHONY: release release-test release-bin
-.PHONY: test-results/release-test-results.txt target/release/avahi-alias
+RELEASE_ENV := RUSTFLAGS="-Dwarnings"
 
-release-test: test-results/release-test-results.txt
+.PHONY: release release-test release-clippy release-lib release-bin
 
 release: release-test release-bin
 
+release-lib: target/release/libavahi_aliases.rlib
+
 release-bin: target/release/avahi-alias target/release/avahi-alias-daemon
 
-test-results/release-test-results.txt: $(lib_source)
-	@mkdir -p test-results
-	RUSTFLAGS="-Dwarnings" cargo test --release --lib | tee $@
-	RUSTFLAGS="-Dwarnings" cargo clippy --release -- -A clippy::all
+release-test:
+	$(RELEASE_ENV) cargo test --release --lib --no-fail-fast
+	$(RELEASE_ENV) cargo test --release --doc --no-fail-fast
 
-target/release/avahi-alias target/release/avahi-alias-daemon: $(lib_source) $(alias_source) $(daemon_source)
-	RUSTFLAGS="-Dwarnings" cargo build --release --bin $(notdir $@)
+release-clippy:
+	$(RELEASE_ENV) cargo +nightly clippy -- -A clippy::all
+
+target/release/libavahi_aliases.rlib: $(lib_source) release-clippy
+	$(RELEASE_ENV) cargo build --release --lib
+
+target/release/avahi-alias: $(alias_source) release-lib
+	$(RELEASE_ENV) cargo build --release --bin $(@F)
 	strip $@
 
-########################################
-# DOCUMENTATION
-########################################
-
-.PHONY: doc
-
-doc:
-	cargo test --no-fail-fast --doc
-	cargo doc --no-deps --document-private-items
+target/release/avahi-alias-daemon: $(daemon_source) release-lib
+	$(RELEASE_ENV) cargo build --release --bin $(@F)
+	strip $@
 
 ########################################
 # UTILITY
 ########################################
 
+.PHONY: clean fmt dofmt dump setup-rust
+
 clean:
-	cargo clean
-	rm -fr test-results
+	rm -fr target test-results
 	rm -f *.profraw *.profdata
 
 fmt:
@@ -101,3 +145,5 @@ setup-rust:
 	cargo install rustfilt
 	rustup component add llvm-tools-preview
 	#cargo install cargo-binutils
+
+# end
