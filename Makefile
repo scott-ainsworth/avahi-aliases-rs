@@ -26,15 +26,7 @@ help:
 
 .PHONY: debug test cov clippy lib doc bin
 
-debug: cov lib doc bin
-
 cov: target/debug/coverage/index.html
-
-lib: target/debug/libavahi_aliases.rlib
-
-doc: target/doc/avahi_aliases/index.html
-
-bin: target/debug/avahi-alias target/debug/avahi-alias-daemon
 
 DEBUG_ENV := CARGO_INCREMENTAL=0
 
@@ -63,6 +55,14 @@ target/debug/coverage/index.html: test
 
 clippy:
 	$(DEBUG_ENV) cargo +nightly clippy -- -A clippy::all
+
+debug: lib doc bin
+
+lib: target/debug/libavahi_aliases.rlib
+
+doc: target/doc/avahi_aliases/index.html
+
+bin: target/debug/avahi-alias target/debug/avahi-alias-daemon
 
 target/debug/libavahi_aliases.rlib: $(lib_source) clippy
 	rm -f *.profraw target/debug/deps/avahi_alias*.gcd[ao]
