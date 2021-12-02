@@ -26,15 +26,7 @@ help:
 
 .PHONY: debug test cov clippy lib doc bin
 
-debug: cov lib doc bin
-
 cov: target/debug/coverage/index.html
-
-lib: target/debug/libavahi_aliases.rlib
-
-doc: target/doc/avahi_aliases/index.html
-
-bin: target/debug/avahi-alias target/debug/avahi-alias-daemon
 
 DEBUG_ENV := CARGO_INCREMENTAL=0
 
@@ -46,15 +38,14 @@ DEBUG_TEST_ENV := \
 	RUSTDOCFLAGS="-Cpanic=abort"
 
 test:
-	$(DEBUG_TEST_ENV) cargo +nightly test --lib --no-fail-fast
+	$(DEBUG_TEST_ENV) cargo +nightly test --no-fail-fast
 	$(DEBUG_TEST_ENV) cargo +nightly test --doc --no-fail-fast
 
 target/debug/coverage/index.html: test
 	grcov . --source-dir . --binary-path ./target/debug/ --branch \
 	  --output-type html --output-path target/debug/coverage/ \
 	  --ignore 'src/bin/*.rs' \
-	  --ignore 'src/avahi_client/avahi_dbus/*.rs' \
-	  --ignore 'src/avahi_client/enums/macros.rs' \
+	  --ignore 'src/avahi_dbus/*.rs' \
 	  --excl-start '^#\[cfg\(test\)\]|^// coverage\(off\)' \
 	  --excl-br-start '^#\[cfg\(test\)\]|^// coverage\(off\)' \
 	  --excl-stop '^// coverage\(on\)' \
@@ -64,6 +55,14 @@ target/debug/coverage/index.html: test
 
 clippy:
 	$(DEBUG_ENV) cargo +nightly clippy -- -A clippy::all
+
+debug: lib doc bin
+
+lib: target/debug/libavahi_aliases.rlib
+
+doc: target/doc/avahi_aliases/index.html
+
+bin: target/debug/avahi-alias target/debug/avahi-alias-daemon
 
 target/debug/libavahi_aliases.rlib: $(lib_source) clippy
 	rm -f *.profraw target/debug/deps/avahi_alias*.gcd[ao]
@@ -113,13 +112,38 @@ target/release/avahi-alias-daemon: $(daemon_source) release-lib
 	strip $@
 
 ########################################
+# AVAHI DBUS CLIENT GENERATED CODE
+########################################
+
+AVAHI_SRC := github/avahi/avahi-daemon
+GEN_DEST := src/avahi_client/avahi_dbus
+CODEGEN := ~/.cargo/bin/dbus-codegen-rust
+
+generated-dbus-code: $(GEN_DEST)/server.rs $(GEN_DEST)/entry_group.rs
+
+$(GEN_DEST)/server.rs: $(AVAHI_SRC)/org.freedesktop.Avahi.Server.xml $(CODEGEN)
+	mkdir -p $(GEN_DEST)
+	bin/generate-dbus-code < $< > $@
+
+$(GEN_DEST)/entry_group.rs: $(AVAHI_SRC)/org.freedesktop.Avahi.EntryGroup.xml $(CODEGEN)
+	mkdir -p $(GEN_DEST)
+	bin/generate-dbus-code < $< > $@
+
+$(AVAHI_SRC)/org.freedesktop.Avahi.Server.xml \
+$(AVAHI_SRC)/org.freedesktop.Avahi.EntryGroup.xml:
+	git clone https://github.com/lathiat/avahi.git github/avahi
+
+$(CODEGEN):
+	cargo install dbus-codegen
+
+########################################
 # UTILITY
 ########################################
 
 .PHONY: clean fmt dofmt dump setup-rust
 
 clean:
-	rm -fr target test-results
+	rm -fr target test-results github
 	rm -f *.profraw *.profdata
 
 fmt:

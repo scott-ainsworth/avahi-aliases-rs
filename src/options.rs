@@ -7,10 +7,10 @@ pub use structopt::StructOpt;
 pub struct CommandOpts {
     /// The subcommand to execute
     #[structopt(subcommand)]
-    pub cmd: Command, // #[grcov(off)]
+    pub cmd: Command, // cov(skip)
 
     #[structopt(flatten)]
-    pub common: CommonOpts, // #[grcov(off)]
+    pub common: CommonOpts, // cov(skip)
 }
 
 #[derive(Debug, StructOpt)]
@@ -18,7 +18,7 @@ pub struct CommandOpts {
 pub struct DaemonOpts {
     /// Common options (verbose, debug, & filename)
     #[structopt(flatten)]
-    pub common: CommonOpts, // #[grcov(off)]
+    pub common: CommonOpts, // cov(skip)
 
     /// Change detection polling interval
     #[structopt(short = "p", long = "poll", default_value = "30")]
@@ -26,18 +26,18 @@ pub struct DaemonOpts {
 
     /// Log to syslog (vice console)
     #[structopt(long = "syslog")]
-    pub syslog: bool, // #[grcov(off)]
+    pub syslog: bool, // cov(skip)
 }
 
 #[derive(Debug, StructOpt)]
 pub struct CommonOpts {
     /// Prints detailed messages
     #[structopt(short = "v", long = "verbose", global = true)]
-    pub verbose: bool, // #[grcov(off)]
+    pub verbose: bool, // cov(skip)
 
     /// Prints detailed (verbose) and debug messages
     #[structopt(short = "d", long = "debug", global = true)]
-    pub debug: bool, // #[grcov(off)]
+    pub debug: bool, // cov(skip)
 
     /// Sets the avahi-aliases file
     #[structopt(
@@ -67,7 +67,7 @@ pub enum Command {
 
         /// Force removal of invalid aliases
         #[structopt(long = "force", global = true)]
-        force: bool, // #[grcov(off)]
+        force: bool, // cov(skip)
     },
 
     #[structopt(about = "List existing Aliases")]

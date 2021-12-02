@@ -1,21 +1,24 @@
-//! Read, write, and modify an aliases file
-//!
-//! The `AliasFile` struct abstracts the details of managing the aliases file
-//! and the aliases it contains.
+//! Read, write, and modify an Avahi aliases file
 
 #![warn(clippy::all)]
 
 use std::io::{BufWriter, Read, Write};
 use std::{self, fs, str};
 
+use anyhow::{anyhow, Context, Result};
+
 use crate::alias::{self, Alias};
-use crate::error::ErrorWrapper;
 use crate::Line;
 
+/// An Avahi aliases file.
+///
+/// The `AliasFile` struct encapsulates the details of managing the aliases file
+/// and the aliases it contains. It provides a high-level interface to load, add,
+/// and remove aliases.
 #[derive(Debug)]
 pub struct AliasesFile {
-    file_name: String, // #[grcov(off)]
-    lines: Vec<Line>,  // #[grcov(off)]
+    file_name: String, // cov(skip)
+    lines: Vec<Line>,  // cov(skip)
 }
 
 impl<'a> AliasesFile {
@@ -38,14 +41,14 @@ impl<'a> AliasesFile {
     /// Return the number of aliases
     pub fn alias_count(&self) -> usize { self.aliases().len() }
 
-    pub fn from_file(filename: &str, allow_invalid: bool) -> Result<Self, ErrorWrapper> {
+    pub fn from_file(filename: &str, allow_invalid: bool) -> Result<Self> {
         let mut file = fs::OpenOptions::new()
             .read(true)
             .open(filename)
-            .map_err(|error| ErrorWrapper::new_open_error(filename, error))?;
+            .with_context(|| format!(r#"could not open "{}""#, filename))?;
         let mut buf = String::new();
         file.read_to_string(&mut buf)
-            .map_err(|error| ErrorWrapper::new_read_error(filename, error))?;
+            .with_context(|| format!(r#"could not read "{}""#, filename))?;
         // Build the AliasesFile
         let aliases_file = AliasesFile {
             file_name: filename.to_owned(),
@@ -54,29 +57,30 @@ impl<'a> AliasesFile {
         if allow_invalid || aliases_file.all_aliases_are_valid() {
             Ok(aliases_file)
         } else {
-            Err(ErrorWrapper::new_invalid_alias_file_error(
-                filename,
+            Err(anyhow!(
+                r#"invalid alias "{}" found in "{}""#,
                 aliases_file.invalid_aliases()[0],
+                filename,
             ))
         }
     }
 
-    pub fn append(&self, aliases: &[&str]) -> Result<(), ErrorWrapper> {
+    pub fn append(&self, aliases: &[&str]) -> Result<()> {
         alias::validate_aliases(aliases)?;
         let mut writer = fs::OpenOptions::new()
             .append(true)
             .open(&self.file_name)
             .map(BufWriter::new)
-            .map_err(|error| ErrorWrapper::new_open_error(&self.file_name, error))?;
+            .with_context(|| format!(r#"could not open "{}""#, &self.file_name))?;
         for alias in aliases {
             writer
                 .write_all(format!("{}\n", alias).as_bytes())
-                .map_err(|error| ErrorWrapper::new_write_error(&self.file_name, error))?;
+                .with_context(|| format!(r#"could not write "{}""#, &self.file_name))?;
         }
         Ok(())
     }
 
-    pub fn remove(&self, aliases: &[&str], force: bool) -> Result<(), ErrorWrapper> {
+    pub fn remove(&self, aliases: &[&str], force: bool) -> Result<()> {
         if !force {
             alias::validate_aliases(aliases)?;
         }
@@ -85,7 +89,7 @@ impl<'a> AliasesFile {
             .write(true)
             .open(&self.file_name)
             .map(BufWriter::new)
-            .map_err(|error| ErrorWrapper::new_open_error(&self.file_name, error))?;
+            .with_context(|| format!(r#"could not open "{}""#, &self.file_name))?;
         let retained_lines = (&self.lines).iter().filter(|line| match line.alias() {
             Some(Err(_)) => false,                        // Invalid aliases must go!
             Some(Ok(alias)) => !aliases.contains(&alias), // Remove specified aliases
@@ -94,7 +98,7 @@ impl<'a> AliasesFile {
         for line in retained_lines {
             writer
                 .write_all(format!("{}\n", line.text()).as_bytes())
-                .map_err(|error| ErrorWrapper::new_write_error(&self.file_name, error))?;
+                .with_context(|| format!(r#"could not write "{}""#, &self.file_name))?;
         }
         Ok(())
     }
@@ -116,7 +120,8 @@ mod tests {
     use std::{self, fs, str};
     use std::io::{BufWriter, Error, Write};
 
-    use crate::ErrorWrapper;
+    use anyhow::Result;
+
     use super::AliasesFile;
 
     const FILE_HEADER: &str = "# This is a unit test temporary file";
@@ -247,7 +252,7 @@ mod tests {
 
     /// Ensure remove --force removes invalid aliases.
     #[test]
-    fn remove_force_removes_invalid_alias_in_avahi_aliases_file() -> Result<(), ErrorWrapper> {
+    fn remove_force_removes_invalid_alias_in_avahi_aliases_file() -> Result<()> {
         let fn_name = stringify!(remove_force_removes_invalid_alias_in_avahi_aliases_file);
         for n in 1..5 {
             let test_file = TestFile::new(fn_name, n, true);

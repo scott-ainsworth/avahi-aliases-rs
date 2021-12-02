@@ -5,10 +5,9 @@
 
 #![warn(clippy::all)]
 
-use structopt::lazy_static::lazy_static;
+use anyhow::{anyhow, Result};
 use regex::Regex;
-
-use crate::error::ErrorWrapper;
+use structopt::lazy_static::lazy_static;
 
 /// A `Result` used to represents an alias, valid or invalid. A valid alias is represented
 /// as `Result::Ok<&str>`, where the **&str** is the alias (e.g. "gandalf.local"). An invalid
@@ -22,7 +21,7 @@ use crate::error::ErrorWrapper;
 /// let a1 = new_alias("a1.local"); // Ok("a1.local")
 /// let a2 = new_alias("a*.local"); // Err("a*.local")
 /// ```
-pub type Alias<'a> = Result<&'a str, &'a str>;
+pub type Alias<'a> = std::result::Result<&'a str, &'a str>;
 
 /// Determine the validity of a candidate alias.
 ///
@@ -76,9 +75,10 @@ pub fn new_alias(alias: &str) -> Alias<'_> {
 /// # Examples
 ///
 /// ```
-/// use avahi_aliases::{validate_aliases, ErrorWrapper};
+/// use anyhow::Result;
+/// use avahi_aliases::validate_aliases;
 ///
-/// fn some_action(aliases: &[&str]) -> Result<(), ErrorWrapper> {
+/// fn some_action(aliases: &[&str]) -> anyhow::Result<()> {
 ///     validate_aliases(aliases)?; // pass the error up the stack
 ///
 ///     // all aliases are valid
@@ -87,13 +87,11 @@ pub fn new_alias(alias: &str) -> Alias<'_> {
 ///     Ok(()) // return Ok(()) on success
 /// }
 /// ```
-pub fn validate_aliases<T>(aliases: &[T]) -> Result<(), ErrorWrapper>
+pub fn validate_aliases<T>(aliases: &[T]) -> Result<()>
 where
     T: AsRef<str>, {
     match aliases.iter().find(|a| !is_valid_alias(a.as_ref())) {
-        Some(invalid_alias) => {
-            Err(ErrorWrapper::new_invalid_alias_error(invalid_alias.as_ref()))
-        },
+        Some(invalid_alias) => Err(anyhow!(r#"invalid alias: "{}""#, invalid_alias.as_ref())),
         None => Ok(()),
     }
 }

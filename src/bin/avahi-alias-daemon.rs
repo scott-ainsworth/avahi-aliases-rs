@@ -5,11 +5,11 @@ use std::{fs, thread, time};
 use ::time::format_description::well_known::Rfc3339;
 use ::time::OffsetDateTime;
 use structopt::StructOpt;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use avahi_aliases::{
-    init_console_logging, init_syslog_logging, AliasesFile, AvahiClient, AvahiRecord,
-    DaemonOpts, ErrorWrapper,
+    avahi_dbus, encoding, init_console_logging, init_syslog_logging, AliasesFile, DaemonOpts,
 };
+use avahi_dbus::{avahi, OrgFreedesktopAvahiEntryGroup, OrgFreedesktopAvahiServer};
 
 #[derive(PartialEq)]
 struct ModifiedSize {
@@ -28,17 +28,27 @@ fn main(opts: DaemonOpts) {
     }
 }
 
-fn inner_main(opts: DaemonOpts) -> Result<(), ErrorWrapper> {
+fn inner_main(opts: DaemonOpts) -> Result<()> {
     init_logging(opts.common.verbose, opts.common.debug, opts.syslog)?;
     signon_app();
     let file_name = opts.common.file.as_str();
-    let avahi_client = AvahiClient::new()?;
-    signon_avahi(&avahi_client)?;
-    load_publish_loop(&avahi_client, file_name, time::Duration::new(opts.polling_interval, 0))?;
+    let dbus_connection = dbus::blocking::Connection::new_system()
+        .with_context(|| "failed to open D-Bus connection to Avahi service")?;
+    let avahi_server_proxy = dbus_connection.with_proxy(
+        avahi::AVAHI_DBUS_NAME,
+        avahi::AVAHI_DBUS_PATH_SERVER,
+        avahi_aliases::DEFAULT_TIMEOUT,
+    );
+    signon_avahi(&avahi_server_proxy)?;
+    load_publish_loop(
+        &avahi_server_proxy,
+        file_name,
+        time::Duration::new(opts.polling_interval, 0),
+    )?;
     Ok(())
 }
 
-fn init_logging(verbose: bool, debug: bool, syslog: bool) -> Result<(), ErrorWrapper> {
+fn init_logging(verbose: bool, debug: bool, syslog: bool) -> Result<()> {
     match syslog {
         true => init_syslog_logging(verbose, debug),
         false => {
@@ -48,21 +58,16 @@ fn init_logging(verbose: bool, debug: bool, syslog: bool) -> Result<(), ErrorWra
     }
 }
 
-fn get_metadata(file_name: &str) -> Result<ModifiedSize, ErrorWrapper> {
-    match fs::metadata(file_name) {
-        Ok(metadata) => Ok(ModifiedSize {
+fn get_metadata(file_name: &str) -> Result<ModifiedSize> {
+    fs::metadata(file_name)
+        .map(|metadata| ModifiedSize {
             last_modified: metadata.modified().unwrap(),
             len: metadata.len(),
-        }),
-        Err(error) => {
-            Err(ErrorWrapper::MetadataError { file_name: file_name.to_owned(), source: error })
-        },
-    }
+        })
+        .with_context(|| format!(r#"could not get last modified for "{}""#, file_name))
 }
 
-fn load_aliases(
-    file_name: &str, modified_size: &ModifiedSize,
-) -> Result<AliasesFile, ErrorWrapper> {
+fn load_aliases(file_name: &str, modified_size: &ModifiedSize) -> Result<AliasesFile> {
     let last_modified: OffsetDateTime = modified_size.last_modified.into();
     log::debug!(
         "Loading aliases from {:?} (modified {})",
@@ -73,8 +78,9 @@ fn load_aliases(
 }
 
 fn load_publish_loop(
-    avahi_client: &AvahiClient, file_name: &str, polling_interval: time::Duration,
-) -> Result<(), ErrorWrapper> {
+    avahi_server_proxy: &avahi_dbus::DBusProxy, file_name: &str,
+    polling_interval: time::Duration,
+) -> Result<()> {
     let mut modified_size = ModifiedSize { last_modified: time::UNIX_EPOCH, len: 0 };
 
     loop {
@@ -83,7 +89,7 @@ fn load_publish_loop(
         if new_modified_size != modified_size {
             let aliases_file = load_aliases(file_name, &new_modified_size)?;
             log::info!(r#"Loaded {} aliases from "{}""#, aliases_file.alias_count(), file_name);
-            publish_aliases(avahi_client, &aliases_file, file_name, &new_modified_size)?;
+            publish_aliases(avahi_server_proxy, &aliases_file, file_name, &new_modified_size)?;
             modified_size = new_modified_size;
         } else {
             log::debug!(r#"Alias file "{}" has not changed"#, file_name);
@@ -93,9 +99,9 @@ fn load_publish_loop(
 }
 
 fn publish_aliases<'a>(
-    avahi_client: &AvahiClient, aliases_file: &AliasesFile, file_name: &'a str,
+    avahi_server_proxy: &avahi_dbus::DBusProxy, aliases_file: &AliasesFile, file_name: &'a str,
     modified_size: &ModifiedSize,
-) -> Result<(), ErrorWrapper> {
+) -> Result<()> {
     let last_modified: OffsetDateTime = modified_size.last_modified.into();
     if aliases_file.alias_count() == 0 {
         log::warn!(
@@ -106,22 +112,37 @@ fn publish_aliases<'a>(
         return Ok(());
     }
 
-    let fqdn = avahi_client.get_host_name_fqdn()?;
+    let fqdn = avahi_server_proxy.get_host_name_fqdn()?;
     log::debug!(r#"Publishing aliases from "{}" for "{}""#, file_name, fqdn,);
 
-    let rdata = AvahiClient::encode_rdata(&fqdn);
-    let group = avahi_client.new_entry_group()?;
+    let rdata = encoding::encode_rdata(&fqdn);
+    let entry_group_path = avahi_server_proxy.entry_group_new()?;
+    let entry_group_proxy = avahi_server_proxy.connection.with_proxy(
+        avahi::AVAHI_DBUS_NAME,
+        entry_group_path,
+        avahi_aliases::DEFAULT_TIMEOUT,
+    );
     for alias in aliases_file.all_aliases() {
         match alias {
             Ok(alias) => {
                 log::info!("Publishing alias {}", alias);
-                let cname_record = AvahiRecord::new_cname(alias, 60, &rdata);
-                group.add_record(cname_record)?;
+                entry_group_proxy.add_record(
+                    avahi::Interface::UNSPECIFIED as i32,
+                    avahi::Protocol::UNSPEC as i32,
+                    0,
+                    alias,
+                    avahi::RecordClass::IN as u16,
+                    avahi::RecordType::CNAME as u16,
+                    60,
+                    rdata.clone(),
+                )?;
+                // let cname_record =
+                //     AvahiRecord::new_cname(alias, time::Duration::from_secs(60), &rdata);
             },
             Err(a) => log::info!(r#"WARNING: invalid alias "{}" ignored"#, a),
         }
     }
-    group.commit()?;
+    entry_group_proxy.commit()?;
     log::info!(
         "Published {} aliases from {:?} (modified {})",
         aliases_file.alias_count(),
@@ -136,9 +157,9 @@ fn signon_app() {
     log::info!("{} {} {}", app.get_name(), clap::crate_version!(), clap::crate_authors!());
 }
 
-fn signon_avahi(avahi_client: &AvahiClient) -> Result<(), ErrorWrapper> {
-    let version = avahi_client.get_version()?;
-    let host_fqdn = avahi_client.get_host_name_fqdn()?;
+fn signon_avahi(avahi_server_proxy: &avahi_dbus::DBusProxy) -> Result<()> {
+    let version = avahi_server_proxy.get_version_string()?;
+    let host_fqdn = avahi_server_proxy.get_host_name_fqdn()?;
     log::info!("{}, host fqdn: {}", version, host_fqdn);
     Ok(())
 }

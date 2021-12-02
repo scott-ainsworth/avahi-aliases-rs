@@ -2,10 +2,10 @@
 
 #![warn(clippy::all)]
 
-use crate::ErrorWrapper;
+use anyhow::{anyhow, Result};
 
 /// Initialize console logging
-pub fn init_console_logging(verbose: bool, debug: bool) -> Result<(), ErrorWrapper> {
+pub fn init_console_logging(verbose: bool, debug: bool) -> Result<()> {
     env_logger::builder()
         .format_target(false)
         .format_level(false)
@@ -16,14 +16,17 @@ pub fn init_console_logging(verbose: bool, debug: bool) -> Result<(), ErrorWrapp
     Ok(())
 }
 
-pub fn init_syslog_logging(verbose: bool, debug: bool) -> Result<(), ErrorWrapper> {
+pub fn init_syslog_logging(verbose: bool, debug: bool) -> Result<()> {
     let formatter = syslog::Formatter3164 {
         facility: syslog::Facility::LOG_DAEMON,
         hostname: None,
         process: "avahi-alias-daemon".into(),
         pid: sysinfo::get_current_pid().unwrap(),
     };
-    let logger = syslog::BasicLogger::new(syslog::unix(formatter)?);
+    let logger = syslog::BasicLogger::new(match syslog::unix(formatter) {
+        Ok(logger) => Ok(logger),
+        Err(error) => Err(anyhow!("could not open syslog: {}", error)),
+    }?);
     log::set_boxed_logger(Box::new(logger))?;
     log::set_max_level(compute_log_level(verbose, debug));
     Ok(())

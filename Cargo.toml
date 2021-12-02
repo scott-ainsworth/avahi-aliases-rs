@@ -1,6 +1,6 @@
 [package]
 name = "avahi-aliases"
-version = "0.1.1"
+version = "0.2.0"
 authors = [ "Scott G. Ainsworth" ]
 edition = "2021"
 description = "Avahi aliases manager"
@@ -22,19 +22,16 @@ codegen-units = 1
 opt-level = "z"
 
 [dependencies]
-structopt = { version = "0.3.25", default-features = false, features = [ "paw" ] }
-paw = "1.0.0"
-log = "0.4.14"
-env_logger = "0.9.0"
-users = "0.11.0"
-clap = "2.33.3"
-time = { version = "0.3.5", features = [ "formatting" ] }
-syslog = "5.0.0"
-thiserror = "1.0.30"
 anyhow = "1.0.45"
-regex = "1.5.4"
-sysinfo = "0.21.1"
+clap = "2.33.3"
 dbus = "0.9.5"
-num_enum = "0.5.4"
+env_logger = "0.9.0"
+log = "0.4.14"
+paw = "1.0.0"
+regex = "1.5.4"
+time = { version = "0.3.5", features = [ "formatting" ] }
+structopt = { version = "0.3.25", default-features = false, features = [ "paw" ] }
+sysinfo = "0.21.1"
+syslog = "5.0.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
