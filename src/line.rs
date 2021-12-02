@@ -11,7 +11,7 @@ impl Line {
     pub fn new(line: String) -> Self { Self { line } }
     pub fn alias(&self) -> Option<Alias<'_>> {
         let raw_alias = clean_alias(&self.line);
-        raw_alias.map(|a| new_alias(a))
+        raw_alias.map(new_alias)
     }
     pub fn text(&self) -> &str { &self.line }
 }
