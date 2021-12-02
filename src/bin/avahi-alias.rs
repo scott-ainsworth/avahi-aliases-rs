@@ -2,8 +2,9 @@
 
 use std::collections::HashSet;
 
+use anyhow::{Result};
 use avahi_aliases::{
-    init_console_logging, validate_aliases, AliasesFile, Command, CommandOpts, ErrorWrapper,
+    init_console_logging, validate_aliases, AliasesFile, Command, CommandOpts,
 };
 
 #[paw::main]
@@ -15,7 +16,7 @@ fn main(opts: CommandOpts) {
     std::process::exit(0);
 }
 
-fn inner_main(opts: CommandOpts) -> Result<(), ErrorWrapper> {
+fn inner_main(opts: CommandOpts) -> Result<()> {
     init_console_logging(opts.common.verbose, opts.common.debug)?;
     match opts.cmd {
         Command::Add { aliases } => add(&opts.common.file, &aliases),
@@ -24,7 +25,7 @@ fn inner_main(opts: CommandOpts) -> Result<(), ErrorWrapper> {
     }
 }
 
-fn add(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
+fn add(filename: &str, arg_aliases: &[String]) -> Result<()> {
     // Validate command line aliases
     validate_aliases(arg_aliases)?;
     // Load the avahi-aliases file. (fails if there are invalid aliases.)
@@ -38,7 +39,7 @@ fn add(filename: &str, arg_aliases: &[String]) -> Result<(), ErrorWrapper> {
     aliases_file.append(&new_aliases)
 }
 
-fn list(filename: &str) -> Result<(), ErrorWrapper> {
+fn list(filename: &str) -> Result<()> {
     let aliases_file = AliasesFile::from_file(filename, true)?;
     if aliases_file.alias_count() == 0 {
         log::warn!(r#"No aliases in "{}""#, filename);
@@ -48,14 +49,14 @@ fn list(filename: &str) -> Result<(), ErrorWrapper> {
         match alias {
             Ok(alias) => println!("{}", alias),
             Err(invalid_alias) => {
-                println!("ERROR: {}", ErrorWrapper::new_invalid_alias_error(invalid_alias))
+                println!(r#"ERROR: invalid alias "{}""#, invalid_alias)
             },
         }
     }
     Ok(())
 }
 
-fn remove(filename: &str, arg_aliases: &[String], force: bool) -> Result<(), ErrorWrapper> {
+fn remove(filename: &str, arg_aliases: &[String], force: bool) -> Result<()> {
     // Validate command line aliases
     validate_aliases(arg_aliases)?;
     // Load the avahi-aliases file. (Fails if there are invalid aliases

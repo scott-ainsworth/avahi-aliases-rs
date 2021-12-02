@@ -5,10 +5,9 @@ use std::{fs, thread, time};
 use ::time::format_description::well_known::Rfc3339;
 use ::time::OffsetDateTime;
 use structopt::StructOpt;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use avahi_aliases::{
     avahi_dbus, encoding, init_console_logging, init_syslog_logging, AliasesFile, DaemonOpts,
-    ErrorWrapper,
 };
 use avahi_dbus::{avahi, OrgFreedesktopAvahiEntryGroup, OrgFreedesktopAvahiServer};
 
@@ -29,11 +28,12 @@ fn main(opts: DaemonOpts) {
     }
 }
 
-fn inner_main(opts: DaemonOpts) -> Result<(), ErrorWrapper> {
+fn inner_main(opts: DaemonOpts) -> Result<()> {
     init_logging(opts.common.verbose, opts.common.debug, opts.syslog)?;
     signon_app();
     let file_name = opts.common.file.as_str();
-    let dbus_connection = dbus::blocking::Connection::new_system()?;
+    let dbus_connection = dbus::blocking::Connection::new_system()
+        .with_context(|| "failed to open D-Bus connection to Avahi service")?;
     let avahi_server_proxy = dbus_connection.with_proxy(
         avahi::AVAHI_DBUS_NAME,
         avahi::AVAHI_DBUS_PATH_SERVER,
@@ -48,7 +48,7 @@ fn inner_main(opts: DaemonOpts) -> Result<(), ErrorWrapper> {
     Ok(())
 }
 
-fn init_logging(verbose: bool, debug: bool, syslog: bool) -> Result<(), ErrorWrapper> {
+fn init_logging(verbose: bool, debug: bool, syslog: bool) -> Result<()> {
     match syslog {
         true => init_syslog_logging(verbose, debug),
         false => {
@@ -58,21 +58,16 @@ fn init_logging(verbose: bool, debug: bool, syslog: bool) -> Result<(), ErrorWra
     }
 }
 
-fn get_metadata(file_name: &str) -> Result<ModifiedSize, ErrorWrapper> {
-    match fs::metadata(file_name) {
-        Ok(metadata) => Ok(ModifiedSize {
+fn get_metadata(file_name: &str) -> Result<ModifiedSize> {
+    fs::metadata(file_name)
+        .map(|metadata| ModifiedSize {
             last_modified: metadata.modified().unwrap(),
             len: metadata.len(),
-        }),
-        Err(error) => {
-            Err(ErrorWrapper::MetadataError { file_name: file_name.to_owned(), source: error })
-        },
-    }
+        })
+        .with_context(|| format!(r#"could not get last modified for "{}""#, file_name))
 }
 
-fn load_aliases(
-    file_name: &str, modified_size: &ModifiedSize,
-) -> Result<AliasesFile, ErrorWrapper> {
+fn load_aliases(file_name: &str, modified_size: &ModifiedSize) -> Result<AliasesFile> {
     let last_modified: OffsetDateTime = modified_size.last_modified.into();
     log::debug!(
         "Loading aliases from {:?} (modified {})",
@@ -85,7 +80,7 @@ fn load_aliases(
 fn load_publish_loop(
     avahi_server_proxy: &avahi_dbus::DBusProxy, file_name: &str,
     polling_interval: time::Duration,
-) -> Result<(), ErrorWrapper> {
+) -> Result<()> {
     let mut modified_size = ModifiedSize { last_modified: time::UNIX_EPOCH, len: 0 };
 
     loop {
@@ -106,7 +101,7 @@ fn load_publish_loop(
 fn publish_aliases<'a>(
     avahi_server_proxy: &avahi_dbus::DBusProxy, aliases_file: &AliasesFile, file_name: &'a str,
     modified_size: &ModifiedSize,
-) -> Result<(), ErrorWrapper> {
+) -> Result<()> {
     let last_modified: OffsetDateTime = modified_size.last_modified.into();
     if aliases_file.alias_count() == 0 {
         log::warn!(
@@ -162,7 +157,7 @@ fn signon_app() {
     log::info!("{} {} {}", app.get_name(), clap::crate_version!(), clap::crate_authors!());
 }
 
-fn signon_avahi(avahi_server_proxy: &avahi_dbus::DBusProxy) -> Result<(), ErrorWrapper> {
+fn signon_avahi(avahi_server_proxy: &avahi_dbus::DBusProxy) -> Result<()> {
     let version = avahi_server_proxy.get_version_string()?;
     let host_fqdn = avahi_server_proxy.get_host_name_fqdn()?;
     log::info!("{}, host fqdn: {}", version, host_fqdn);
