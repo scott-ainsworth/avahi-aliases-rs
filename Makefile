@@ -46,15 +46,14 @@ DEBUG_TEST_ENV := \
 	RUSTDOCFLAGS="-Cpanic=abort"
 
 test:
-	$(DEBUG_TEST_ENV) cargo +nightly test --lib --no-fail-fast
+	$(DEBUG_TEST_ENV) cargo +nightly test --no-fail-fast
 	$(DEBUG_TEST_ENV) cargo +nightly test --doc --no-fail-fast
 
 target/debug/coverage/index.html: test
 	grcov . --source-dir . --binary-path ./target/debug/ --branch \
 	  --output-type html --output-path target/debug/coverage/ \
 	  --ignore 'src/bin/*.rs' \
-	  --ignore 'src/avahi_client/avahi_dbus/*.rs' \
-	  --ignore 'src/avahi_client/enums/macros.rs' \
+	  --ignore 'src/avahi_dbus/*.rs' \
 	  --excl-start '^#\[cfg\(test\)\]|^// coverage\(off\)' \
 	  --excl-br-start '^#\[cfg\(test\)\]|^// coverage\(off\)' \
 	  --excl-stop '^// coverage\(on\)' \

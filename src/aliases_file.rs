@@ -16,8 +16,8 @@ use crate::Line;
 /// and remove aliases.
 #[derive(Debug)]
 pub struct AliasesFile {
-    file_name: String, // #[grcov(off)]
-    lines: Vec<Line>,  // #[grcov(off)]
+    file_name: String, // cov(skip)
+    lines: Vec<Line>,  // cov(skip)
 }
 
 impl<'a> AliasesFile {

@@ -4,7 +4,7 @@ use crate::alias::{new_alias, Alias};
 
 #[derive(Debug)]
 pub struct Line {
-    line: String,
+    line: String, // cov(skip)
 }
 
 impl Line {
