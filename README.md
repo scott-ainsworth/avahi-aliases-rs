@@ -1,12 +1,11 @@
-# avahi-aliases-rs
-
 # Background
 
 The current version of [Avahi](https://avahi.org/)
 ([v0.8](https://github.com/lathiat/avahi/releases/tag/v0.8)) publishes the host name as a
 [Domain Name System (DNS)](https://en.wikipedia.org/wiki/Domain_Name_System) [Address (A)
 Record](https://en.wikipedia.org/wiki/List_of_DNS_record_types), which is sufficient for the
-majority of small, local network needs. However, sometimes additional names for host. This is
+majority of small, local network needs. However, sometimes additional names for host are needed.
+This is
 especially true now that [Docker](https://www.docker.com/) has simplified deployment of many
 services on a single host. This is where `avahi-aliases-rs` comes in.
 
