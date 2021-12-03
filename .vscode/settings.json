@@ -1,0 +1,10 @@
+{
+    "cSpell.customDictionaries": {
+        "custom-dictionary-folder-avahi-aliases-rs": {
+            "name": "custom-dictionary-folder-avahi-aliases-rs",
+            "path": "${workspaceFolder:avahi-aliases-rs}/.cspell/custom-dictionary-folder-avahi-aliases-rs.txt",
+            "addWords": true,
+            "scope": "folder"
+        }
+    }
+}

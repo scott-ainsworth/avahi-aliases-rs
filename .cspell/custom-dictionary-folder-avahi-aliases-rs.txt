@@ -1,0 +1,6 @@
+# Custom Dictionary Words
+Ainsworth
+Airtonix
+avahi
+IDNA
+luarntlemercier
