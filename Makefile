@@ -1,8 +1,8 @@
 .DEFAULT: test
 
-lib_source    := $(wildcard src/*.rs) $(wildcard src/avahi-client/*.rs src/avahi-client/*/*.rs)
-alias_source  := $(wildcard src/bin/avahi-alias/*.rs)
-daemon_source := $(wildcard src/bin/avahi-alias-daemon/*.rs)
+LIB_SOURCE    := $(wildcard src/*.rs) $(wildcard src/avahi-client/*.rs src/avahi-client/*/*.rs)
+ALIAS_SOURCE  := $(wildcard src/bin/avahi-alias/*.rs)
+DAEMON_SOURCE := $(wildcard src/bin/avahi-alias-daemon/*.rs)
 
 ########################################
 # CONVENIENCE TARGETS
@@ -64,7 +64,7 @@ doc: target/doc/avahi_aliases/index.html
 
 bin: target/debug/avahi-alias target/debug/avahi-alias-daemon
 
-target/debug/libavahi_aliases.rlib: $(lib_source) clippy
+target/debug/libavahi_aliases.rlib: $(LIB_SOURCE) clippy
 	rm -f *.profraw target/debug/deps/avahi_alias*.gcd[ao]
 	rm -f target/debug/deps/avahi_aliases-*.gcda
 	$(DEBUG_ENV) cargo +nightly build --lib
@@ -73,10 +73,10 @@ target/doc/avahi_aliases/index.html: lib
 	rm -fr $(@D)
 	$(DEBUG_ENV) cargo +nightly doc --no-deps --document-private-items
 
-target/debug/avahi-alias: $(alias_source) lib
+target/debug/avahi-alias: $(ALIAS_SOURCE) lib
 	$(DEBUG_ENV) cargo +nightly build --bin $(@F)
 
-target/debug/avahi-alias-daemon: $(daemon_source) lib
+target/debug/avahi-alias-daemon: $(DAEMON_SOURCE) lib
 	$(DEBUG_ENV) cargo +nightly build --bin $(@F)
 
 ########################################
@@ -100,14 +100,14 @@ release-test:
 release-clippy:
 	$(RELEASE_ENV) cargo +nightly clippy -- -A clippy::all
 
-target/release/libavahi_aliases.rlib: $(lib_source) release-clippy
+target/release/libavahi_aliases.rlib: $(LIB_SOURCE) release-clippy
 	$(RELEASE_ENV) cargo build --release --lib
 
-target/release/avahi-alias: $(alias_source) release-lib
+target/release/avahi-alias: $(ALIAS_SOURCE) release-lib
 	$(RELEASE_ENV) cargo build --release --bin $(@F)
 	strip $@
 
-target/release/avahi-alias-daemon: $(daemon_source) release-lib
+target/release/avahi-alias-daemon: $(DAEMON_SOURCE) release-lib
 	$(RELEASE_ENV) cargo build --release --bin $(@F)
 	strip $@
 
@@ -153,9 +153,9 @@ dofmt:
 	cargo +nightly fmt -v
 
 dump:
-	@echo "lib_source    = $(lib_source)"
-	@echo "alias_source  = $(alias_source)"
-	@echo "daemon_source = $(daemon_source)"
+	@echo "LIB_SOURCE    = $(LIB_SOURCE)"
+	@echo "ALIAS_SOURCE  = $(ALIAS_SOURCE)"
+	@echo "DAEMON_SOURCE = $(DAEMON_SOURCE)"
 
 # `rust-setup` This is likely incomplete
 setup-rust:
