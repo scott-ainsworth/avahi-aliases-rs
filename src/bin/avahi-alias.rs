@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 
-use anyhow::{Result};
+use anyhow::Result;
 use avahi_aliases::{
     init_console_logging, validate_aliases, AliasesFile, Command, CommandOpts,
 };
@@ -30,7 +30,7 @@ fn add(filename: &str, arg_aliases: &[String]) -> Result<()> {
     validate_aliases(arg_aliases)?;
     // Load the avahi-aliases file. (fails if there are invalid aliases.)
     let aliases_file = AliasesFile::from_file(filename, false)?;
-    // new_aliases are commane line aliases not already in the file (don't add dups!).
+    // new_aliases are command line aliases not already in the file (don't add dups!).
     let (_, new_aliases) =
         split_aliases(&aliases_file.aliases().into_iter().collect(), arg_aliases);
     for alias in new_aliases.iter() {

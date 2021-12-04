@@ -6,5 +6,15 @@
             "addWords": true,
             "scope": "folder"
         }
-    }
+    },
+    "cSpell.ignorePaths": [
+        ".git/objects",
+        ".vscode",
+        ".vscode-insiders",
+        "node_modules",
+        "package-lock.json",
+        "src/avahi_dbus/entry_group.rs",
+        "src/avahi_dbus/server.rs",
+        "vscode-extension"
+    ]
 }
