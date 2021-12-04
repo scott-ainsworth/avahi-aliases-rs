@@ -1,0 +1,6 @@
+# avahi-aliases-rs test data (invalid aliases)
+a0.local
+valerie.locl
+b0. local
+sc⊙tt.local
+xyzzy.local

@@ -8,6 +8,7 @@ dbus
 dups
 Freedesktop
 IDNA
+locl
 luarntlemercier
 rdata
 signon
