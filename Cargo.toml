@@ -12,7 +12,7 @@ publish = false
 default-run = "avahi-alias"
 
 [badges]
-maintainance = { status = "experimental" }
+maintenance = { status = "experimental" }
 
 [profile.release]
 debug = false

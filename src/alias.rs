@@ -106,7 +106,7 @@ mod tests {
 
     static VALID_ALIASES: [&str; 4] = ["a.local", "xyzzy.local", "b0.local", "a-z.local"];
     static INVALID_ALIASES: [&str; 5] =
-        ["a. local", "xyzz*.local", ".local", "-.local", "a-.local"];
+        ["a. local", "xyzzy*.local", ".local", "-.local", "a-.local"];
 
     #[test]
     fn is_valid_returns_true_for_valid_alias() {

@@ -2,5 +2,17 @@
 Ainsworth
 Airtonix
 avahi
+cname
+codegen
+dbus
+dups
+Freedesktop
 IDNA
 luarntlemercier
+rdata
+signon
+structopt
+sysinfo
+UNSPEC
+xyzzy
+zeroconf
