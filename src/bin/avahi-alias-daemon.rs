@@ -43,7 +43,8 @@ fn inner_main(opts: DaemonOpts) -> Result<()> {
     load_publish_loop(
         &avahi_server_proxy,
         file_name,
-        time::Duration::new(opts.polling_interval, 0),
+        time::Duration::from_secs(opts.polling_interval),
+        time::Duration::from_secs(opts.ttl),
     )?;
     Ok(())
 }
@@ -79,7 +80,7 @@ fn load_aliases(file_name: &str, modified_size: &ModifiedSize) -> Result<Aliases
 
 fn load_publish_loop(
     avahi_server_proxy: &avahi_dbus::DBusProxy, file_name: &str,
-    polling_interval: time::Duration,
+    polling_interval: time::Duration, ttl: time::Duration,
 ) -> Result<()> {
     let mut modified_size = ModifiedSize { last_modified: time::UNIX_EPOCH, len: 0 };
 
@@ -89,7 +90,13 @@ fn load_publish_loop(
         if new_modified_size != modified_size {
             let aliases_file = load_aliases(file_name, &new_modified_size)?;
             log::info!(r#"Loaded {} aliases from "{}""#, aliases_file.alias_count(), file_name);
-            publish_aliases(avahi_server_proxy, &aliases_file, file_name, &new_modified_size)?;
+            publish_aliases(
+                avahi_server_proxy,
+                &aliases_file,
+                file_name,
+                &new_modified_size,
+                ttl,
+            )?;
             modified_size = new_modified_size;
         } else {
             log::debug!(r#"Alias file "{}" has not changed"#, file_name);
@@ -100,7 +107,7 @@ fn load_publish_loop(
 
 fn publish_aliases<'a>(
     avahi_server_proxy: &avahi_dbus::DBusProxy, aliases_file: &AliasesFile, file_name: &'a str,
-    modified_size: &ModifiedSize,
+    modified_size: &ModifiedSize, ttl: time::Duration,
 ) -> Result<()> {
     let last_modified: OffsetDateTime = modified_size.last_modified.into();
     if aliases_file.alias_count() == 0 {
@@ -133,7 +140,7 @@ fn publish_aliases<'a>(
                     alias,
                     avahi::RecordClass::IN as u16,
                     avahi::RecordType::CNAME as u16,
-                    60,
+                    ttl.as_secs() as u32,
                     rdata.clone(),
                 )?;
                 // let cname_record =
