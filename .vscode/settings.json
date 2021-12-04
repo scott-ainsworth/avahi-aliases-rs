@@ -9,6 +9,7 @@
     },
     "cSpell.ignorePaths": [
         ".git/objects",
+        ".rustfmt.toml",
         ".vscode",
         ".vscode-insiders",
         "node_modules",

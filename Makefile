@@ -1,8 +1,8 @@
-.DEFAULT: test
+LIB_SOURCE    := $(wildcard src/*.rs) $(wildcard src/avahi-client/*.rs src/avahi-client/*/*.rs)
+ALIAS_SOURCE  := $(wildcard src/bin/avahi-alias/*.rs)
+DAEMON_SOURCE := $(wildcard src/bin/avahi-alias-daemon/*.rs)
 
-lib_source    := $(wildcard src/*.rs) $(wildcard src/avahi-client/*.rs src/avahi-client/*/*.rs)
-alias_source  := $(wildcard src/bin/avahi-alias/*.rs)
-daemon_source := $(wildcard src/bin/avahi-alias-daemon/*.rs)
+#QUIET         := --quiet
 
 ########################################
 # CONVENIENCE TARGETS
@@ -11,6 +11,7 @@ daemon_source := $(wildcard src/bin/avahi-alias-daemon/*.rs)
 help:
 	@echo "Available Targets:"
 	@echo ""
+	@echo "debug        Build, test, and document"
 	@echo "test         Test libavahi_aliases.rlib (debug)"
 	@echo "cov          Create the test coverage report (debug)"
 	@echo "clippy       Run clippy (debug)"
@@ -24,22 +25,36 @@ help:
 # DEBUG
 ########################################
 
-.PHONY: debug test cov clippy lib doc bin
-
-cov: target/debug/coverage/index.html
-
-DEBUG_ENV := CARGO_INCREMENTAL=0
-
-DEBUG_TEST_ENV := \
+DEBUG_ENV := \
 	CARGO_INCREMENTAL=0 \
 	RUSTFLAGS="\
 	  -Clink-dead-code -Coverflow-checks=off -Cpanic=abort \
 	  -Zprofile -Zpanic_abort_tests" \
 	RUSTDOCFLAGS="-Cpanic=abort"
 
+.PHONY: debug test cov clippy lib doc bin
+
+debug: lib test bin cov clippy doc
+
+lib: target/debug/libavahi_aliases.rlib
+
+target/debug/libavahi_aliases.rlib: $(LIB_SOURCE)
+	rm -f *.profraw target/debug/deps/avahi_alias*.gcd[ao]
+	rm -f target/debug/deps/avahi_aliases-*.gcda
+	$(DEBUG_ENV) cargo +nightly build $(QUIET) --lib
+
 test:
-	$(DEBUG_TEST_ENV) cargo +nightly test --no-fail-fast
-	$(DEBUG_TEST_ENV) cargo +nightly test --doc --no-fail-fast
+	$(DEBUG_ENV) cargo +nightly test $(QUIET) --no-fail-fast
+
+bin: target/debug/avahi-alias target/debug/avahi-alias-daemon
+
+target/debug/avahi-alias: $(ALIAS_SOURCE) lib
+	$(DEBUG_ENV) cargo +nightly build $(QUIET) --bin $(@F)
+
+target/debug/avahi-alias-daemon: $(DAEMON_SOURCE) lib
+	$(DEBUG_ENV) cargo +nightly build $(QUIET) --bin $(@F)
+
+cov: target/debug/coverage/index.html
 
 target/debug/coverage/index.html: test
 	grcov . --source-dir . --binary-path ./target/debug/ --branch \
@@ -54,30 +69,13 @@ target/debug/coverage/index.html: test
 	  --excl-br-line '\#\[derive\(|// cov\(skip\)'
 
 clippy:
-	$(DEBUG_ENV) cargo +nightly clippy -- -A clippy::all
-
-debug: lib doc bin
-
-lib: target/debug/libavahi_aliases.rlib
+	$(DEBUG_ENV) cargo +nightly clippy $(QUIET) -- -A clippy::all
 
 doc: target/doc/avahi_aliases/index.html
 
-bin: target/debug/avahi-alias target/debug/avahi-alias-daemon
-
-target/debug/libavahi_aliases.rlib: $(lib_source) clippy
-	rm -f *.profraw target/debug/deps/avahi_alias*.gcd[ao]
-	rm -f target/debug/deps/avahi_aliases-*.gcda
-	$(DEBUG_ENV) cargo +nightly build --lib
-
 target/doc/avahi_aliases/index.html: lib
 	rm -fr $(@D)
-	$(DEBUG_ENV) cargo +nightly doc --no-deps --document-private-items
-
-target/debug/avahi-alias: $(alias_source) lib
-	$(DEBUG_ENV) cargo +nightly build --bin $(@F)
-
-target/debug/avahi-alias-daemon: $(daemon_source) lib
-	$(DEBUG_ENV) cargo +nightly build --bin $(@F)
+	$(DEBUG_ENV) cargo +nightly doc $(QUIET) --no-deps --document-private-items
 
 ########################################
 # RELEASE
@@ -94,20 +92,20 @@ release-lib: target/release/libavahi_aliases.rlib
 release-bin: target/release/avahi-alias target/release/avahi-alias-daemon
 
 release-test:
-	$(RELEASE_ENV) cargo test --release --lib --no-fail-fast
-	$(RELEASE_ENV) cargo test --release --doc --no-fail-fast
+	$(RELEASE_ENV) cargo +stable test --release --lib --no-fail-fast
+	$(RELEASE_ENV) cargo +stable test --release --doc --no-fail-fast
 
 release-clippy:
 	$(RELEASE_ENV) cargo +nightly clippy -- -A clippy::all
 
-target/release/libavahi_aliases.rlib: $(lib_source) release-clippy
+target/release/libavahi_aliases.rlib: $(LIB_SOURCE) release-clippy
 	$(RELEASE_ENV) cargo build --release --lib
 
-target/release/avahi-alias: $(alias_source) release-lib
+target/release/avahi-alias: $(ALIAS_SOURCE) release-lib
 	$(RELEASE_ENV) cargo build --release --bin $(@F)
 	strip $@
 
-target/release/avahi-alias-daemon: $(daemon_source) release-lib
+target/release/avahi-alias-daemon: $(DAEMON_SOURCE) release-lib
 	$(RELEASE_ENV) cargo build --release --bin $(@F)
 	strip $@
 
@@ -153,9 +151,9 @@ dofmt:
 	cargo +nightly fmt -v
 
 dump:
-	@echo "lib_source    = $(lib_source)"
-	@echo "alias_source  = $(alias_source)"
-	@echo "daemon_source = $(daemon_source)"
+	@echo "LIB_SOURCE    = $(LIB_SOURCE)"
+	@echo "ALIAS_SOURCE  = $(ALIAS_SOURCE)"
+	@echo "DAEMON_SOURCE = $(DAEMON_SOURCE)"
 
 # `rust-setup` This is likely incomplete
 setup-rust:

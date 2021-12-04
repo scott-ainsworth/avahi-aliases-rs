@@ -5,14 +5,20 @@
 		{
 			"type": "cargo",
 			"command": "check",
+			"args": ["+nightly"],
+			"env": {
+				"CARGO_INCREMENTAL": "0",
+				"RUSTFLAGS": "-Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zprofile -Zpanic_abort_tests",
+				"RUSTDOCFLAGS": "-Cpanic=abort"
+			},
 			"problemMatcher": [ "$rustc" ],
 			"group": "build",
-			"label": "rust: cargo check"
+			"label": "rust: cargo check",
 		},
 
 		{
-			"type": "cargo",
-			"command": "build",
+			"type": "shell",
+			"command": "make bin",
 			"problemMatcher": [ "$rustc" ],
 			"group": {
 				"kind": "build",
@@ -24,20 +30,21 @@
 
 		{
 			"type": "shell",
-			"command": ["cargo", "+nightly", "fmt" ],
+			"command": ["cargo", "+nightly", "fmt"],
 			"problemMatcher": [ "$rustc" ],
 			"group": "build",
 			"label": "rust: cargo fmt"
 		},
 
 		{
-			"type": "cargo",
-			"command": "test",
+			"type": "shell",
+			"command": "make test",
 			"problemMatcher": [ "$rustc" ],
 			"group": {
 				"kind": "test",
 				"isDefault": true
 			},
+			"dependsOn": ["rust: cargo fmt"],
 			"label": "rust: cargo test"
 		}
 
