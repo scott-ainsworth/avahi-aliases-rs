@@ -18,6 +18,7 @@ test-results
 
 # Temporary files
 *.swp
+test-data/avahi-aliases
 
 # OS Junk
 .DS_Store
