@@ -1,6 +1,6 @@
 [package]
 name = "avahi-aliases"
-version = "1.0.0"
+version = "1.1.0-alpha"
 authors = [ "Scott G. Ainsworth" ]
 edition = "2021"
 description = "Avahi aliases manager"
