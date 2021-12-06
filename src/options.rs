@@ -21,7 +21,9 @@ pub struct DaemonOpts {
     pub common: CommonOpts, // cov(skip)
 
     /// Change detection polling interval in seconds
-    #[structopt(short = "p", long = "poll", default_value = "30")]
+    #[structopt(
+        short = "p", long = "poll", default_value = "30",
+        validator = validate_polling_interval)]
     pub polling_interval: u64,
 
     /// Log to syslog (vice console)
@@ -29,12 +31,42 @@ pub struct DaemonOpts {
     pub syslog: bool, // cov(skip)
 
     /// Avahi D-Bus connection timeout
-    #[structopt(long = "timeout", default_value = "60")]
+    #[structopt(long = "timeout", default_value = "60", validator = validate_timeout)]
     pub timeout: u64,
 
     /// Alias mDNS time-to-live (TTL) in seconds
-    #[structopt(long = "ttl", default_value = "60")]
+    #[structopt(long = "ttl", default_value = "60", validator = validate_ttl)]
     pub ttl: u64,
+}
+
+fn validate_polling_interval(value: String) -> Result<(), String> {
+    match value.parse::<u64>() {
+        Err(error) => Err(error.to_string()),
+        Ok(timeout) if !(10..=60).contains(&timeout) => {
+            Err("polling interval must be 10-60 seconds".to_string())
+        },
+        _ => Ok(()),
+    }
+}
+
+fn validate_timeout(value: String) -> Result<(), String> {
+    match value.parse::<u64>() {
+        Err(error) => Err(error.to_string()),
+        Ok(timeout) if !(10..=300).contains(&timeout) => {
+            Err("timeout must be 10-300 seconds".to_string())
+        },
+        _ => Ok(()),
+    }
+}
+
+fn validate_ttl(value: String) -> Result<(), String> {
+    match value.parse::<u64>() {
+        Err(error) => Err(error.to_string()),
+        Ok(timeout) if timeout > (i32::MAX as u64) => {
+            Err("time-to-live (TTL) must be less than 2,147,483,648 (2^31) seconds".to_string())
+        },
+        _ => Ok(()),
+    }
 }
 
 #[derive(Debug, StructOpt)]
@@ -377,6 +409,107 @@ mod tests {
     }
 
     #[test]
+    fn polling_interval_validation_returns_ok_for_in_range_values() {
+        assert!(validate_polling_interval(String::from("10")).is_ok());
+        assert!(validate_polling_interval(String::from("30")).is_ok());
+        assert!(validate_polling_interval(String::from("60")).is_ok());
+    }
+
+    #[test]
+    fn polling_interval_validation_returns_error_for_out_of_range_values() {
+        assert!(validate_polling_interval(String::from("0")).is_err());
+        assert!(validate_polling_interval(String::from("9")).is_err());
+        assert!(validate_polling_interval(String::from("61")).is_err());
+        assert!(validate_polling_interval(String::from("120")).is_err());
+    }
+
+    #[test]
+    fn polling_interval_validation_returns_error_for_invalid_values() {
+        assert!(validate_polling_interval(String::from("not-a-number")).is_err());
+    }
+
+    #[test]
+    fn polling_interval_validation_returns_correct_message_on_error() {
+        assert_eq!(
+            validate_polling_interval(String::from("0")).unwrap_err(),
+            "polling interval must be 10-60 seconds"
+        );
+        assert_eq!(
+            validate_polling_interval(String::from("not-a-number")).unwrap_err(),
+            "invalid digit found in string"
+        );
+    }
+
+    #[test]
+    fn timeout_validation_returns_ok_for_in_range_values() {
+        assert!(validate_timeout(String::from("10")).is_ok());
+        assert!(validate_timeout(String::from("60")).is_ok());
+        assert!(validate_timeout(String::from("300")).is_ok());
+    }
+
+    #[test]
+    fn timeout_validation_returns_error_for_out_of_range_values() {
+        assert!(validate_timeout(String::from("0")).is_err());
+        assert!(validate_timeout(String::from("9")).is_err());
+        assert!(validate_timeout(String::from("301")).is_err());
+        assert!(validate_timeout(String::from("600")).is_err());
+    }
+
+    #[test]
+    fn timeout_validation_returns_error_for_invalid_values() {
+        assert!(validate_timeout(String::from("not-a-number")).is_err());
+    }
+
+    #[test]
+    fn timeout_validation_returns_correct_message_on_error() {
+        assert_eq!(
+            validate_timeout(String::from("0")).unwrap_err(),
+            "timeout must be 10-300 seconds"
+        );
+        assert_eq!(
+            validate_timeout(String::from("not-a-number")).unwrap_err(),
+            "invalid digit found in string"
+        );
+    }
+
+    #[test]
+    fn ttl_validation_returns_ok_for_in_range_values() {
+        assert!(validate_ttl(String::from("0")).is_ok());
+        assert!(validate_ttl(String::from("30")).is_ok());
+        assert!(validate_ttl(String::from("86400")).is_ok());
+        assert!(validate_ttl(i32::MAX.to_string()).is_ok());
+    }
+
+    #[test]
+    fn ttl_validation_returns_error_for_out_of_range_values() {
+        assert!(validate_ttl(((i32::MAX as u64) + 1).to_string()).is_err());
+        assert!(validate_ttl(u64::MAX.to_string()).is_err());
+    }
+
+    #[test]
+    fn ttl_validation_returns_error_for_invalid_values() {
+        assert!(validate_ttl(String::from("not-a-number")).is_err());
+    }
+
+    #[test]
+    fn ttl_validation_returns_correct_message_on_error() {
+        assert_eq!(
+            validate_ttl(((i32::MAX as u64) + 1).to_string()).unwrap_err(),
+            "time-to-live (TTL) must be less than 2,147,483,648 (2^31) seconds"
+        );
+        assert_eq!(
+            validate_ttl(String::from("not-a-number")).unwrap_err(),
+            "invalid digit found in string"
+        );
+    }
+
+    #[test]
+    fn daemon_syslog_option_works() {
+        let opts = DaemonOpts::from_iter(["", "--syslog"]);
+        assert!(opts.syslog);
+    }
+
+    #[test]
     fn daemon_timeout_option_works() {
         let opts = DaemonOpts::from_iter(["", "--timeout", "100"]);
         assert_eq!(opts.timeout, 100);
@@ -386,12 +519,6 @@ mod tests {
     fn daemon_ttl_option_works() {
         let opts = DaemonOpts::from_iter(["", "--ttl", "100"]);
         assert_eq!(opts.ttl, 100);
-    }
-
-    #[test]
-    fn daemon_syslog_option_works() {
-        let opts = DaemonOpts::from_iter(["", "--syslog"]);
-        assert!(opts.syslog);
     }
 }
 
