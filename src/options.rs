@@ -1,6 +1,6 @@
 #![warn(clippy::all)]
 
-pub use structopt::StructOpt;
+pub use structopt::{clap, StructOpt};
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "avahi-alias", about = "Maintain /etc/avahi/avahi-aliases")]
@@ -27,6 +27,10 @@ pub struct DaemonOpts {
     /// Log to syslog (vice console)
     #[structopt(long = "syslog")]
     pub syslog: bool, // cov(skip)
+
+    /// Avahi D-Bus connection timeout
+    #[structopt(long = "timeout", default_value = "60")]
+    pub timeout: u64,
 
     /// Alias mDNS time-to-live (TTL) in seconds
     #[structopt(long = "ttl", default_value = "60")]
@@ -335,6 +339,7 @@ mod tests {
         assert_eq!(opts.common.file, "/etc/avahi/avahi-aliases");
         assert!(!opts.common.verbose);
         assert_eq!(opts.polling_interval, 30);
+        assert_eq!(opts.timeout, 60);
         assert_eq!(opts.ttl, 60);
         assert!(!opts.syslog);
     }
@@ -369,6 +374,12 @@ mod tests {
         assert_eq!(opts.polling_interval, 10);
         let opts = DaemonOpts::from_iter(["", "-p", "10"]);
         assert_eq!(opts.polling_interval, 10);
+    }
+
+    #[test]
+    fn daemon_timeout_option_works() {
+        let opts = DaemonOpts::from_iter(["", "--timeout", "100"]);
+        assert_eq!(opts.timeout, 100);
     }
 
     #[test]
