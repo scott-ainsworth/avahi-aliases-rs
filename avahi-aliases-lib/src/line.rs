@@ -1,5 +1,3 @@
-#![warn(clippy::all)]
-
 use crate::alias::{new_alias, Alias};
 
 #[derive(Debug)]

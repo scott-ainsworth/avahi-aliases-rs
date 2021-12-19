@@ -1,7 +1,5 @@
 //! Read, write, and modify an Avahi aliases file
 
-#![warn(clippy::all)]
-
 use std::io::{BufWriter, Read, Write};
 use std::{self, fs, str};
 
@@ -21,7 +19,7 @@ pub struct AliasesFile {
     lines: Vec<Line>,  // cov(skip)
 }
 
-impl<'a> AliasesFile {
+impl AliasesFile {
     /// Return a vector containing the aliases.
     /// Note: this function returns both valid and invalid aliases.
     pub fn all_aliases(&self) -> Vec<Alias<'_>> {
@@ -39,8 +37,12 @@ impl<'a> AliasesFile {
     }
 
     /// Return the number of aliases
-    pub fn alias_count(&self) -> usize { self.aliases().len() }
+    pub fn alias_count(&self) -> usize {
+        self.aliases().len()
+    }
 
+    #[allow(unused_results)] // There seems to be a bug in the linter. `file.read_to_string()
+                             // should not generate this warning.
     pub fn from_file(filename: &str, allow_invalid: bool) -> Result<Self> {
         let mut file = fs::OpenOptions::new()
             .read(true)
@@ -103,11 +105,15 @@ impl<'a> AliasesFile {
         Ok(())
     }
 
-    pub fn all_aliases_are_valid(&self) -> bool { self.invalid_aliases().is_empty() }
+    pub fn all_aliases_are_valid(&self) -> bool {
+        self.invalid_aliases().is_empty()
+    }
 
     /// Used for testing.
     #[allow(dead_code)]
-    fn lines(&self) -> &Vec<Line> { &self.lines }
+    fn lines(&self) -> &Vec<Line> {
+        &self.lines
+    }
 }
 
 //**********************************************************************************************
@@ -117,6 +123,9 @@ impl<'a> AliasesFile {
 #[cfg(test)]
 mod tests {
 
+    #![allow(clippy::needless_range_loop)]
+
+    use std::io::{BufWriter, Error, Write};
     use std::{self, fs, str};
     use std::io::{BufWriter, Error, Write};
 
@@ -214,7 +223,7 @@ mod tests {
             let test_file = TestFile::new(fn_name, n, false);
             let aliases_file = AliasesFile::from_file(&test_file.file_name, false).unwrap();
             aliases_file
-                .append(&vec!["b0.local"])
+                .append(&["b0.local"])
                 .unwrap_or_else(|error| panic!("Append failed: {}", error));
             let aliases_file = AliasesFile::from_file(&test_file.file_name, false).unwrap();
             let aliases = aliases_file.aliases();
@@ -269,9 +278,9 @@ mod tests {
         file_name: String,
     }
 
-    impl<'a> TestFile {
+    impl TestFile {
         fn new(file_name: &'static str, line_count: usize, include_invalid: bool) -> TestFile {
-            let file_name = format!("data/{}-{}.txt", file_name, line_count);
+            let file_name = format!("test-{}-{}-delete-me.txt", file_name, line_count);
             fs::OpenOptions::new()
                 .write(true)
                 .create(true)

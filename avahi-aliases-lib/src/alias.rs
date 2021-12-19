@@ -3,8 +3,6 @@
 //! Validate aliases and encapsulate the result in `std::result::Result` to simplify
 //! invalid aliases handling.
 
-#![warn(clippy::all)]
-
 use anyhow::{anyhow, Result};
 use regex::Regex;
 use structopt::lazy_static::lazy_static;

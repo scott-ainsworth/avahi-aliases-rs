@@ -1,7 +1,5 @@
 //! Logging setup for `avahi-aliases`
 
-#![warn(clippy::all)]
-
 use anyhow::{anyhow, Result};
 
 /// Initialize console logging
@@ -16,6 +14,7 @@ pub fn init_console_logging(verbose: bool, debug: bool) -> Result<()> {
     Ok(())
 }
 
+#[allow(box_pointers)] // required for syslog
 pub fn init_syslog_logging(verbose: bool, debug: bool) -> Result<()> {
     let formatter = syslog::Formatter3164 {
         facility: syslog::Facility::LOG_DAEMON,
@@ -52,8 +51,6 @@ mod tests {
 
     use std::panic;
 
-    use log;
-
     use super::*;
 
     #[test]
@@ -81,6 +78,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(box_pointers)] // required for syslog
     fn init_syslog_logging_works() {
         // There is a good chance that logging is already initialized. Catch the resulting
         // panic. The result is less than perfect testing--c'est la guerre!

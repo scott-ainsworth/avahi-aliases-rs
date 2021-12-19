@@ -1,5 +1,3 @@
-#![warn(clippy::all)]
-
 use std::{fs, thread, time};
 
 use ::time::format_description::well_known::Rfc3339;
@@ -9,7 +7,9 @@ use anyhow::{Context, Result};
 use avahi_aliases::{
     avahi_dbus, encoding, init_console_logging, init_syslog_logging, AliasesFile, DaemonOpts,
 };
-use avahi_dbus::{avahi, OrgFreedesktopAvahiEntryGroup, OrgFreedesktopAvahiServer};
+use avahi_dbus::avahi;
+use avahi_dbus::entry_group::OrgFreedesktopAvahiEntryGroup;
+use avahi_dbus::server::OrgFreedesktopAvahiServer;
 
 #[derive(PartialEq)]
 struct ModifiedSize {
@@ -84,7 +84,7 @@ fn load_aliases(file_name: &str, modified_size: &ModifiedSize) -> Result<Aliases
 }
 
 fn load_publish_loop(
-    avahi_server_proxy: &avahi_dbus::DBusProxy, file_name: &str,
+    avahi_server_proxy: &avahi_dbus::DBusProxy<'_, '_>, file_name: &str,
     polling_interval: time::Duration, timeout: time::Duration, ttl: time::Duration,
 ) -> Result<()> {
     let mut modified_size = ModifiedSize { last_modified: time::UNIX_EPOCH, len: 0 };
@@ -111,9 +111,10 @@ fn load_publish_loop(
     }
 }
 
-fn publish_aliases<'a>(
-    avahi_server_proxy: &avahi_dbus::DBusProxy, aliases_file: &AliasesFile, file_name: &'a str,
-    modified_size: &ModifiedSize, ttl: time::Duration, timeout: time::Duration,
+fn publish_aliases(
+    avahi_server_proxy: &avahi_dbus::DBusProxy<'_, '_>, aliases_file: &AliasesFile,
+    file_name: &str, modified_size: &ModifiedSize, ttl: time::Duration,
+    timeout: time::Duration,
 ) -> Result<()> {
     let last_modified: OffsetDateTime = modified_size.last_modified.into();
     if aliases_file.alias_count() == 0 {
@@ -168,7 +169,7 @@ fn signon_app() {
     log::info!("{} {} {}", app.get_name(), clap::crate_version!(), clap::crate_authors!());
 }
 
-fn signon_avahi(avahi_server_proxy: &avahi_dbus::DBusProxy) -> Result<()> {
+fn signon_avahi(avahi_server_proxy: &avahi_dbus::DBusProxy<'_, '_>) -> Result<()> {
     let version = avahi_server_proxy.get_version_string()?;
     let host_fqdn = avahi_server_proxy.get_host_name_fqdn()?;
     log::info!("{}, host fqdn: {}", version, host_fqdn);

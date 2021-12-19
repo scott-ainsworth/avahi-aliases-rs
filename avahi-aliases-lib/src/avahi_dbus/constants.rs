@@ -10,13 +10,14 @@ pub const AVAHI_DBUS_NAME: &str = "org.freedesktop.Avahi";
 /// D-Bus Avahi service path
 pub const AVAHI_DBUS_PATH_SERVER: &str = "/";
 
-/// D- Bus name of the Avahi Entry Group service
+/// D-Bus name of the Avahi Entry Group service
 pub const AVAHI_DBUS_INTERFACE_ENTRY_GROUP: &str = "org.freedesktop.Avahi.EntryGroup";
 
 //**********************************************************************************************
 // Client State
 //**********************************************************************************************
 
+#[derive(Clone, Copy, Debug)]
 #[repr(i32)]
 pub enum ClientState {
     /// Server state: REGISTERING.
@@ -40,9 +41,10 @@ pub enum ClientState {
 // Entry Group
 //**********************************************************************************************
 
+#[derive(Clone, Copy, Debug)]
 #[repr(i32)]
 pub enum EntryGroupState {
-    /// The group has not yet been commited, the user must still call
+    /// The group has not yet been committed, the user must still call
     /// avahi_entry_group_commit().
     UNCOMMITTED = 0,
 
@@ -67,6 +69,7 @@ pub enum EntryGroupState {
 /// Special values for AvahiIfIndex
 ///
 /// Reference: Avahi source: `avahi-common/address.h`
+#[derive(Clone, Copy, Debug)]
 #[repr(i32)]
 pub enum Interface {
     /// Unspecified/all interface(s)
@@ -77,7 +80,7 @@ pub enum Interface {
 // Protocol
 //**********************************************************************************************
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(i32)]
 pub enum Protocol {
     /// Unspecified/all protocol(s)
@@ -94,6 +97,7 @@ pub enum Protocol {
 // Record Class
 //**********************************************************************************************
 
+#[derive(Clone, Copy, Debug)]
 #[repr(u16)]
 pub enum RecordClass {
     /// Internet record class
@@ -104,6 +108,7 @@ pub enum RecordClass {
 // Record Type
 //**********************************************************************************************
 
+#[derive(Clone, Copy, Debug)]
 #[repr(u16)]
 pub enum RecordType {
     /// IPv4 Address record
@@ -121,7 +126,7 @@ pub enum RecordType {
     /// Pointer (reverse lookup) record
     PTR   = 12,
 
-    /// Host Informattion record
+    /// Host Information record
     HINFO = 13,
 
     /// Mail Exchanger record
@@ -141,6 +146,7 @@ pub enum RecordType {
 // Server State
 //**********************************************************************************************
 
+#[derive(Clone, Copy, Debug)]
 #[repr(i32)]
 pub enum ServerState {
     /// Invalid state (initial).
@@ -152,7 +158,7 @@ pub enum ServerState {
     /// There is a collision with a host RR. All host RRs have been withdrawn, the user should
     /// set a new host name via avahi_server_set_host_name().
     COLLISION   = 3,
-    /// Fatal failure occured, the server is unable to proceed.
+    /// Fatal failure occurred, the server is unable to proceed.
     FAILURE     = 4,
 }
 

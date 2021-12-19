@@ -3,7 +3,7 @@
 SED=$(which gsed || which sed)
 
 echo $'#![allow(clippy::all)]'
-#echo $'#![allow(soft_unstable)]'
+#echo $'#![allow(single_use_lifetimes)]'
 #echo $'#![rustfmt::skip]'
 dbus-codegen-rust --system-bus --client blocking \
 | $SED \

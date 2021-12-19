@@ -1,0 +1,22 @@
+[package]
+name = "avahi-alias"
+authors = [ "Scott G. Ainsworth" ]
+version = "1.1.0-alpha"
+edition = "2021"
+description = "Avahi aliases manager"
+license = "MIT OR Apache-2.0"
+keywords = ["avahi", "zeroconf", "bonjour"]
+categories = ["command-line-utilities", "os::linux-apis"]
+publish = false
+
+[badges]
+maintenance = { status = "experimental" }
+
+[dependencies]
+avahi-aliases = { path = "../avahi-aliases-lib" }
+anyhow = "1.0.45"
+log = "0.4.14"
+paw = "1.0.0"
+#structopt = { version = "0.3.25", default-features = false, features = [ "paw" ] }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

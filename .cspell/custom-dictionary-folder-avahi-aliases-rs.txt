@@ -7,10 +7,15 @@ codegen
 dbus
 dups
 Freedesktop
+HINFO
 IDNA
+INET
 locl
 luarntlemercier
 rdata
+repr
+RUSTDOCFLAGS
+RUSTFLAGS
 signon
 structopt
 sysinfo

@@ -1,5 +1,3 @@
-#![warn(clippy::all)]
-
 use std::collections::HashSet;
 
 use anyhow::Result;

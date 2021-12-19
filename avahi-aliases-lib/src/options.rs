@@ -1,6 +1,4 @@
-#![warn(clippy::all)]
-
-pub use structopt::{clap, StructOpt};
+pub(crate) use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "avahi-alias", about = "Maintain /etc/avahi/avahi-aliases")]
@@ -267,7 +265,6 @@ mod tests {
         assert!(CommandOpts::from_iter(["", "list", "-v"]).common.verbose);
         assert!(CommandOpts::from_iter(["", "list", "--verbose"]).common.verbose);
     }
-
 
     //******************************************************************************************
     // Remove Command

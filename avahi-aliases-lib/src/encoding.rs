@@ -1,7 +1,5 @@
 //! Avahi-specific encoding
 
-#![warn(clippy::all)]
-
 pub fn encode_rdata(name: &str) -> Vec<u8> {
     // TODO(#24) fix capacity to account for IDNA
     let mut rdata: Vec<u8> = Vec::<u8>::with_capacity(name.len() + 1);
