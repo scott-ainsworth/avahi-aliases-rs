@@ -1,0 +1,15 @@
+[build]
+incremental = false
+rustflags = [
+    "-C", "link-dead-code",
+#    "-C", "overflow-checks=off",
+    "-C", "panic=abort",
+#    "-Z", "profile",
+#    "-Z", "panic_abort_tests"
+]
+rustdocflags = [ "-C", "panic=abort" ]
+
+[env]
+#CARGO_INCREMENTAL = "0"
+#RUSTFLAGS = "-C link-dead-code -C overflow-checks=off -C panic=abort -Z profile -Z panic_abort_tests"
+#RUSTDOCFLAGS = "-C panic=abort"

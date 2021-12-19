@@ -1,52 +1,59 @@
 {
 	"version": "2.0.0",
 	"tasks": [
-
 		{
 			"type": "cargo",
-			"command": "check",
-			"args": ["+nightly"],
-			"env": {
-				"CARGO_INCREMENTAL": "0",
-				"RUSTFLAGS": "-Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zprofile -Zpanic_abort_tests",
-				"RUSTDOCFLAGS": "-Cpanic=abort"
-			},
-			"problemMatcher": [ "$rustc" ],
+			"subcommand": "check",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"group": "build",
-			"label": "rust: cargo check",
+			"label": "avahi-aliases: cargo check"
 		},
-
 		{
-			"type": "shell",
-			"command": "make bin",
-			"problemMatcher": [ "$rustc" ],
+			"type": "cargo",
+			"subcommand": "build",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			},
-			"dependsOn": ["rust: cargo fmt"],
-			"label": "rust: cargo build"
+			"label": "avahi-aliases: cargo build"
 		},
-
 		{
-			"type": "shell",
-			"command": ["cargo", "+nightly", "fmt"],
-			"problemMatcher": [ "$rustc" ],
-			"group": "build",
-			"label": "rust: cargo fmt"
-		},
-
-		{
-			"type": "shell",
-			"command": "make test",
-			"problemMatcher": [ "$rustc" ],
+			"type": "cargo",
+			"subcommand": "test",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"group": {
 				"kind": "test",
 				"isDefault": true
 			},
-			"dependsOn": ["rust: cargo fmt"],
-			"label": "rust: cargo test"
+			"label": "avahi-aliases: cargo test"
+		},
+		{
+			"type": "shell",
+			"command": "generate-coverage.sh",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "test",
+			"dependsOn": [
+				"avahi-aliases: cargo test"
+			],
+			"label": "avahi-aliases: tests & coverage report"
+		},
+		{
+			"type": "cargo",
+			"subcommand": "clean",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"label": "avahi-aliases: cargo clean"
 		}
-
 	]
 }
