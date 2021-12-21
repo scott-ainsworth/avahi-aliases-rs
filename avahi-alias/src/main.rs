@@ -48,7 +48,7 @@ fn list(filename: &str) -> Result<()> {
             Ok(alias) => println!("{}", alias),
             Err(invalid_alias) => {
                 println!(r#"ERROR: invalid alias "{}""#, invalid_alias)
-            },
+            }
         }
     }
     Ok(())

@@ -24,17 +24,17 @@ pub enum ClientState {
     REGISTERING = 1,
 
     /// Server state: RUNNING.
-    RUNNING     = 2,
+    RUNNING = 2,
 
     /// Server state: COLLISION.
-    COLLISION   = 3,
+    COLLISION = 3,
 
     /// Some kind of error happened on the client side.
-    FAILURE     = 100,
+    FAILURE = 100,
 
     /// We're still connecting. This state is only entered when AVAHI_CLIENT_NO_FAIL has been
     /// passed to avahi_client_new() and the daemon is not yet available.
-    CONNECTING  = 101,
+    CONNECTING = 101,
 }
 
 //**********************************************************************************************
@@ -56,10 +56,10 @@ pub enum EntryGroupState {
 
     /// A name collision for one of the entries in the group has been detected,
     /// the entries have been withdrawn.
-    COLLISION   = 3,
+    COLLISION = 3,
 
     /// Some kind of failure happened, the entries have been withdrawn.
-    FAILURE     = 4,
+    FAILURE = 4,
 }
 
 //**********************************************************************************************
@@ -87,10 +87,10 @@ pub enum Protocol {
     UNSPEC = -1,
 
     /// IPv4
-    INET   = 0,
+    INET = 0,
 
     /// IPv6
-    INET6  = 1,
+    INET6 = 1,
 }
 
 //**********************************************************************************************
@@ -112,34 +112,34 @@ pub enum RecordClass {
 #[repr(u16)]
 pub enum RecordType {
     /// IPv4 Address record
-    A     = 1,
+    A = 1,
 
     /// Name Server record
-    NS    = 2,
+    NS = 2,
 
     /// Canonical Name record
     CNAME = 5,
 
     /// Start of Authority record
-    SOA   = 6,
+    SOA = 6,
 
     /// Pointer (reverse lookup) record
-    PTR   = 12,
+    PTR = 12,
 
     /// Host Information record
     HINFO = 13,
 
     /// Mail Exchanger record
-    MX    = 15,
+    MX = 15,
 
     /// Text record
-    TXT   = 16,
+    TXT = 16,
 
     /// IPv6 address record
-    AAA   = 28,
+    AAA = 28,
 
     /// Service record
-    SRV   = 33,
+    SRV = 33,
 }
 
 //**********************************************************************************************
@@ -150,16 +150,16 @@ pub enum RecordType {
 #[repr(i32)]
 pub enum ServerState {
     /// Invalid state (initial).
-    INVALID     = 0,
+    INVALID = 0,
     /// Host RRs are being registered.
     REGISTERING = 1,
     /// All host RRs have been established.
-    RUNNING     = 2,
+    RUNNING = 2,
     /// There is a collision with a host RR. All host RRs have been withdrawn, the user should
     /// set a new host name via avahi_server_set_host_name().
-    COLLISION   = 3,
+    COLLISION = 3,
     /// Fatal failure occurred, the server is unable to proceed.
-    FAILURE     = 4,
+    FAILURE = 4,
 }
 
 //**********************************************************************************************
@@ -197,7 +197,9 @@ mod tests {
     }
 
     #[test]
-    fn interface_constants_are_correct() { assert_eq!(Interface::UNSPECIFIED as i32, -1) }
+    fn interface_constants_are_correct() {
+        assert_eq!(Interface::UNSPECIFIED as i32, -1)
+    }
 
     #[test]
     fn protocol_constants_are_correct() {
@@ -207,7 +209,9 @@ mod tests {
     }
 
     #[test]
-    fn record_class_constants_are_correct() { assert_eq!(RecordClass::IN as u16, 1) }
+    fn record_class_constants_are_correct() {
+        assert_eq!(RecordClass::IN as u16, 1)
+    }
 
     #[test]
     fn record_type_constants_are_correct() {

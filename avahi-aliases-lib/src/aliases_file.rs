@@ -127,7 +127,6 @@ mod tests {
 
     use std::io::{BufWriter, Error, Write};
     use std::{self, fs, str};
-    use std::io::{BufWriter, Error, Write};
 
     use anyhow::Result;
 

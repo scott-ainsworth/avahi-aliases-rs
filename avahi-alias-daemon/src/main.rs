@@ -2,7 +2,6 @@ use std::{fs, thread, time};
 
 use ::time::format_description::well_known::Rfc3339;
 use ::time::OffsetDateTime;
-use structopt::StructOpt;
 use anyhow::{Context, Result};
 use avahi_aliases::{
     avahi_dbus, encoding, init_console_logging, init_syslog_logging, AliasesFile, DaemonOpts,
@@ -10,6 +9,7 @@ use avahi_aliases::{
 use avahi_dbus::avahi;
 use avahi_dbus::entry_group::OrgFreedesktopAvahiEntryGroup;
 use avahi_dbus::server::OrgFreedesktopAvahiServer;
+use structopt::StructOpt;
 
 #[derive(PartialEq)]
 struct ModifiedSize {
@@ -32,7 +32,7 @@ fn main(opts: DaemonOpts) {
         Err(error) => {
             log::error!("Error: {}", error);
             std::process::exit(1)
-        },
+        }
     }
 }
 
@@ -60,7 +60,7 @@ fn init_logging(verbose: bool, debug: bool, syslog: bool) -> Result<()> {
         false => {
             init_console_logging(verbose, debug)?;
             Ok(())
-        },
+        }
     }
 }
 
@@ -150,7 +150,7 @@ fn publish_aliases(
                     ttl.as_secs() as u32,
                     rdata.clone(),
                 )?;
-            },
+            }
             Err(a) => log::info!(r#"WARNING: invalid alias "{}" ignored"#, a),
         }
     }

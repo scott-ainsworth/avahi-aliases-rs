@@ -2,12 +2,14 @@
 Ainsworth
 Airtonix
 avahi
+clippy
 cname
 codegen
 dbus
 dups
 Freedesktop
 HINFO
+idents
 IDNA
 INET
 locl

@@ -13,7 +13,9 @@ pub fn encode_rdata(name: &str) -> Vec<u8> {
 }
 
 /// Convert IDNA domains to ASCII (currently a no-op/passthrough)
-pub fn to_ascii(idna_name: &str) -> String { idna_name.to_owned() }
+pub fn to_ascii(idna_name: &str) -> String {
+    idna_name.to_owned()
+}
 
 //**********************************************************************************************
 // unit tests
