@@ -1,6 +1,4 @@
-#![warn(clippy::all)]
-
-pub use structopt::{clap, StructOpt};
+pub(crate) use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "avahi-alias", about = "Maintain /etc/avahi/avahi-aliases")]
@@ -44,7 +42,7 @@ fn validate_polling_interval(value: String) -> Result<(), String> {
         Err(error) => Err(error.to_string()),
         Ok(timeout) if !(10..=60).contains(&timeout) => {
             Err("polling interval must be 10-60 seconds".to_string())
-        },
+        }
         _ => Ok(()),
     }
 }
@@ -54,7 +52,7 @@ fn validate_timeout(value: String) -> Result<(), String> {
         Err(error) => Err(error.to_string()),
         Ok(timeout) if !(10..=300).contains(&timeout) => {
             Err("timeout must be 10-300 seconds".to_string())
-        },
+        }
         _ => Ok(()),
     }
 }
@@ -64,7 +62,7 @@ fn validate_ttl(value: String) -> Result<(), String> {
         Err(error) => Err(error.to_string()),
         Ok(timeout) if timeout > (i32::MAX as u64) => {
             Err("time-to-live (TTL) must be less than 2,147,483,648 (2^31) seconds".to_string())
-        },
+        }
         _ => Ok(()),
     }
 }
@@ -267,7 +265,6 @@ mod tests {
         assert!(CommandOpts::from_iter(["", "list", "-v"]).common.verbose);
         assert!(CommandOpts::from_iter(["", "list", "--verbose"]).common.verbose);
     }
-
 
     //******************************************************************************************
     // Remove Command

@@ -1,5 +1,3 @@
-#![warn(clippy::all)]
-
 use crate::alias::{new_alias, Alias};
 
 #[derive(Debug)]
@@ -8,12 +6,16 @@ pub struct Line {
 }
 
 impl Line {
-    pub fn new(line: String) -> Self { Self { line } }
+    pub fn new(line: String) -> Self {
+        Self { line }
+    }
     pub fn alias(&self) -> Option<Alias<'_>> {
         let raw_alias = clean_alias(&self.line);
         raw_alias.map(new_alias)
     }
-    pub fn text(&self) -> &str { &self.line }
+    pub fn text(&self) -> &str {
+        &self.line
+    }
 }
 
 fn clean_alias(raw_alias: &str) -> Option<&str> {

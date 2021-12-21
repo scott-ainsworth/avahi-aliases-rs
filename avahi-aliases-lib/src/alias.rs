@@ -3,8 +3,6 @@
 //! Validate aliases and encapsulate the result in `std::result::Result` to simplify
 //! invalid aliases handling.
 
-#![warn(clippy::all)]
-
 use anyhow::{anyhow, Result};
 use regex::Regex;
 use structopt::lazy_static::lazy_static;
@@ -89,7 +87,8 @@ pub fn new_alias(alias: &str) -> Alias<'_> {
 /// ```
 pub fn validate_aliases<T>(aliases: &[T]) -> Result<()>
 where
-    T: AsRef<str>, {
+    T: AsRef<str>,
+{
     match aliases.iter().find(|a| !is_valid_alias(a.as_ref())) {
         Some(invalid_alias) => Err(anyhow!(r#"invalid alias: "{}""#, invalid_alias.as_ref())),
         None => Ok(()),

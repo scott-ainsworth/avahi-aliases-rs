@@ -1,6 +1,4 @@
-//! This crate implements avahi-aliases
-
-#![warn(clippy::all, rust_2018_idioms)]
+//! Core avahi-aliases functions
 
 mod alias;
 pub use alias::{is_valid_alias, new_alias, validate_aliases, Alias};
