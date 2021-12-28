@@ -63,7 +63,7 @@ $(DEBUG_BIN)/avahi-alias-daemon: $(DAEMON_SOURCE) lib
 test: lib bin unit-test
 	bin/test-avahi-alias.sh debug
 
-cov: $(DEBUG_BIN)/coverage/index.html
+cov: test $(DEBUG_BIN)/coverage/index.html
 
 $(DEBUG_BIN)/coverage/index.html: unit-test
 	grcov . --source-dir . --binary-path ./$(DEBUG_BIN)/ --branch \
@@ -93,7 +93,7 @@ RELEASE_ENV := RUSTFLAGS="-Dwarnings"
 
 .PHONY: release release-lib release-bin release-unit-test release-test release-clippy
 
-release: release-lib release-bin release-clippy release-unit-test release-test
+release: release-clippy release-lib release-unit-test release-bin release-test
 
 release-lib: $(RELEASE_BIN)/libavahi_aliases.rlib
 
@@ -104,11 +104,9 @@ release-bin: $(RELEASE_BIN)/avahi-alias $(RELEASE_BIN)/avahi-alias-daemon
 
 $(RELEASE_BIN)/avahi-alias: $(ALIAS_SOURCE) release-lib
 	$(RELEASE_ENV) cargo +stable build --release --bin $(@F)
-	strip $@
 
 $(RELEASE_BIN)/avahi-alias-daemon: $(DAEMON_SOURCE) release-lib
 	$(RELEASE_ENV) cargo +stable build --release --bin $(@F)
-	strip $@
 
 release-clippy:
 	$(RELEASE_ENV) cargo +stable clippy -- -A clippy::all

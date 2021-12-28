@@ -1,3 +1,5 @@
+cargo-features = [ "strip" ]
+
 [workspace]
 members = [ "avahi-alias", "avahi-alias-daemon", "avahi-aliases-lib" ]
 
@@ -7,5 +9,6 @@ lto = true
 panic = "abort"
 codegen-units = 1
 opt-level = "z"
+strip = true # strip symbols from binaries
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
