@@ -12,8 +12,10 @@ HINFO
 idents
 IDNA
 INET
+libdbus
 locl
 luarntlemercier
+nocapture
 rdata
 repr
 RUSTDOCFLAGS

@@ -1,0 +1,29 @@
+name: Rust
+
+on:
+  push:
+  pull_request:
+    branches: [ develop, main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Dependencies
+      run: sudo apt-get install --no-install-recommends -y libdbus-1-dev dbus at-spi2-core
+    - name: Setup Rust Nightly
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+        components:
+    - name: Check
+      run: cargo check --verbose --all
+    - name: Run Tests
+      run: cargo test --all  -- --nocapture --color always
