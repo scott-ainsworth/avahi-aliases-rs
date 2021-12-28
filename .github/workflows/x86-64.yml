@@ -1,4 +1,4 @@
-name: Rust
+name: x86-64
 
 on:
   push:

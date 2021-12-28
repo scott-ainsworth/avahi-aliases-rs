@@ -1,4 +1,14 @@
-# Background
+# avahi-aliases-rs
+
+Publish aliases (CNAMEs) for a host using [Avahi](https://avahi.org/).
+
+## Build Status
+
+| Environment | Develop | Main |
+|:------------|:-------:|:----:|
+| x86_64 (Ubuntu) | [![Develop/x86_64](https://github.com/scott-ainsworth/avahi-aliases-rs/actions/workflows/x86-64.yml/badge.svg?branch=develop)](https://github.com/scott-ainsworth/avahi-aliases-rs/actions/workflows/x86-64.yml) | |
+
+## Background
 
 The current version of [Avahi](https://avahi.org/)
 ([v0.8](https://github.com/lathiat/avahi/releases/tag/v0.8)) publishes the host name as a
@@ -24,14 +34,14 @@ another version? The motivations behind this version include:
 - Syslog logging (and possibility other lagging facilities in the future).
 - Configurable connections timeouts, DNS record time-to-live, etc.
 
-## System Requirements
+### System Requirements
 
 `avahi-aliases-rs` should build and build and run on most
 [Unix-like](https://en.wikipedia.org/wiki/Unix-like) operating systems on which
 [Avahi](https://avahi.org/) and [Rust](https://www.rust-lang.org/) also work. Some of the unit
 and integration tests only succeed when the Avahi daemon is available.
 
-## Installation
+### Installation
 
 Installing `avahi-daemon-rs` currently requires building it on the target machine. (Technically,
 it could be cross-compiled, but there is not support in the existing Cargo.toml and Makefile.)
@@ -57,7 +67,7 @@ The remaining steps are executed from a shell prompt.
 8. Run `sudo bin/install-systemd`. The daemon (`avahi-alias-daemon` will start automatically).
 9. Use `avahi-alias` to add and remove CNAMEs (aliases).
 
-## Adding and Removing Aliases (CNAMEs)
+### Adding and Removing Aliases (CNAMEs)
 
 The `avahi-alias` program is used to add and remove aliases. Examples:
 
@@ -65,7 +75,7 @@ The `avahi-alias` program is used to add and remove aliases. Examples:
 - `avahi-alias remove example.local` removes *example.local* from the Avahi aliases file<sup>1</sup>. The removal should be picked up by the daemon within 10 seconds<sup>2</sup>.
 - `avahi-alias list` lists the aliases in `/etc/avahi/avahi-aliases`. Invalid aliases are flagged in the listing.
 
-## Pre-installation Testing
+### Pre-installation Testing
 
 To test the `avahi-alias-daemon` prior to installing it,
    1. Create an aliases file (`test-aliases` for example).
@@ -74,11 +84,11 @@ To test the `avahi-alias-daemon` prior to installing it,
    4. Open another shell windows and ping the alias (`ping -c 1 example.local`).
    5. Press control-C to terminate the daemon.
 
-## Getting Started Notes
+### Getting Started Notes
 1. The default location for the Avahi aliases file is `/etc/avahi/avahi-aliases`. This can be changed with the `--file` option.
 1. Changes to `/etc/avahi/avahi-aliases` will be reflected in about 10 seconds. This time can be changed with the `--poll` command line option.
 
-# Compatibility with other Avahi Alias implementations
+## Compatibility with other Avahi Alias implementations
 
 Given the wide variety of Avahi alias implementations, compatibility is a challenge.
 `avahi-aliases-rs` features and their compatibility are described in the following table.
@@ -94,11 +104,11 @@ Given the wide variety of Avahi alias implementations, compatibility is a challe
 
 
 
-# Copyright and License
+## Copyright and License
 
 `avahi-aliases-rs` is Copyright &copy; 2022 by Scott G. Ainsworth. Like Avahi, `avahi-aliases-rs` is licensed under the GNU Lesser General Public License, [Version 2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html), February 1999. A [copy of the license](https://github.com/scott-ainsworth/avahi-aliases-rs/blob/main/LICENSE) is available in the repository.
 
-# Acknowledgements and References
+## Acknowledgements and References
 
 - [Avahi](https://avahi.org/) web site.
 - Original Python example on the Avahi wiki ([archived version](https://web.archive.org/web/2019*/http://www.avahi.org/wiki/Examples/PythonPublishAlias) at the [Internet Archive](https://web.archive.org/). The [original](http://www.avahi.org/wiki/Examples/PythonPublishAlias) is no longer available.)
